@@ -2,7 +2,7 @@
     <!-- Session Status -->
     <x-auth-session-status class="mb-4" :status="session('status')" />
 
-    <form method="POST" action="{{ route('password.email') }}" class="space-y-7">
+    <form id="forgot-password-form" method="POST" action="{{ route('password.email') }}" class="space-y-7">
         @csrf
 
         <div class="flex flex-col text-center justify-center">
@@ -13,10 +13,11 @@
         <div>
             <x-text-input id="email" class="block mt-1 w-full bg-gray-200" type="email" name="email" :value="old('email')" placeholder="example@email.com *" required autofocus />
             <x-input-error :messages="$errors->get('email')" class="mt-2" />
+            <p id="reset-cooldown-message" class="mt-2 hidden text-sm text-gray-600"></p>
         </div>
 
         <div class="flex items-center justify-center pt-2">
-            <x-primary-button class="text-[1em]">
+            <x-primary-button id="send-reset-link-btn" class="text-[1em] disabled:bg-blue-200 disabled:hover:bg-blue-200 disabled:cursor-not-allowed" autocomplete="off">
                 {{ __('Enviar') }}
             </x-primary-button>
         </div>
@@ -26,4 +27,81 @@
             </a>
         </div>
     </form>
+
+    <script>
+        (() => {
+            const form = document.getElementById('forgot-password-form');
+            const sendButton = document.getElementById('send-reset-link-btn');
+            const cooldownMessage = document.getElementById('reset-cooldown-message');
+            const cooldownStorageKey = 'passwordResetCooldownEndsAt';
+            let interval = null;
+
+            if (!form || !sendButton || !cooldownMessage) {
+                return;
+            }
+
+            const formatSeconds = (seconds) => {
+                return `00:${String(seconds).padStart(2, '0')}s`;
+            };
+
+            const stopCooldown = () => {
+                if (interval !== null) {
+                    window.clearInterval(interval);
+                    interval = null;
+                }
+
+                sendButton.disabled = false;
+                cooldownMessage.classList.add('hidden');
+                cooldownMessage.textContent = '';
+                window.localStorage.removeItem(cooldownStorageKey);
+            };
+
+            const startCooldownFromTimestamp = (endsAt) => {
+                if (interval !== null) {
+                    window.clearInterval(interval);
+                }
+
+                sendButton.disabled = true;
+                cooldownMessage.classList.remove('hidden');
+
+                const tick = () => {
+                    const remaining = Math.ceil((endsAt - Date.now()) / 1000);
+
+                    if (remaining <= 0) {
+                        stopCooldown();
+                        return;
+                    }
+
+                    cooldownMessage.textContent = `Enviar nuevamente en ${formatSeconds(remaining)}`;
+                };
+
+                tick();
+                interval = window.setInterval(tick, 1000);
+            };
+
+            const startCooldown = (durationSeconds) => {
+                const endsAt = Date.now() + (durationSeconds * 1000);
+                window.localStorage.setItem(cooldownStorageKey, String(endsAt));
+                startCooldownFromTimestamp(endsAt);
+            };
+
+            const savedEndsAt = Number(window.localStorage.getItem(cooldownStorageKey));
+
+            if (savedEndsAt && savedEndsAt > Date.now()) {
+                startCooldownFromTimestamp(savedEndsAt);
+            } else {
+                window.localStorage.removeItem(cooldownStorageKey);
+            }
+
+            form.addEventListener('submit', () => {
+                if (!sendButton.disabled) {
+                    startCooldown(30);
+                }
+            });
+
+            @if (session('status'))
+                startCooldown(30);
+            @endif
+        })();
+    </script>
 </x-guest-layout>

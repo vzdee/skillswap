@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
@@ -29,6 +30,10 @@ class PasswordResetLinkController extends Controller
         $request->validate([
             'email' => ['required', 'email'],
         ]);
+
+        DB::table(config('auth.passwords.users.table', 'password_reset_tokens'))
+            ->where('email', $request->email)
+            ->delete();
 
         // We will send the password reset link to this user. Once we have attempted
         // to send the link, we will examine the response then see the message we
