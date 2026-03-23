@@ -47,24 +47,25 @@
                 <div class="w-full max-w-sm">
                     <label for="profile_photo" class="mb-2 block text-center text-md font-semibold text-gray-700">Sube tu foto de perfil</label>
 
-                    <label for="profile_photo" class="group flex w-full cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-gray-400 bg-gray-200 px-6 py-10 text-center transition-colors hover:bg-gray-300">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="mb-3 h-10 w-10 text-gray-600 transition-transform group-hover:-translate-y-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7" aria-hidden="true">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15a4.5 4.5 0 0 0 4.5 4.5h9a5.25 5.25 0 1 0-.16-10.498A6 6 0 0 0 4.5 9.75m7.5 8.25V9.75m0 0-3 3m3-3 3 3" />
-                        </svg>
-                        <span class="text-sm font-semibold text-gray-700">Haz clic para subir tu foto</span>
-                        <span class="mt-1 text-xs text-gray-600">Formatos permitidos: .png, .jpg y .jpeg</span>
-                        <span class="mt-1 text-xs text-gray-600">Tamaño máximo: 2MB</span>
-                    </label>
-                    
-                        <div id="profile_photo_preview_wrapper" class="mt-3 hidden">
-                            <img
-                                id="profile_photo_preview"
-                                src=""
-                                alt="Vista previa de foto de perfil"
-                                class="h-24 w-24 rounded-full object-cover border border-gray-300 mx-auto"
-                            >
-                            <p id="profile_photo_name" class="mt-2 text-center text-xs text-gray-600"></p>
+                    <label for="profile_photo" class="group relative flex min-h-56 w-full cursor-pointer flex-col items-center justify-center overflow-hidden rounded-2xl border border-dashed border-gray-400 bg-gray-200 px-6 py-10 text-center transition-colors hover:bg-gray-300">
+                        <div id="profile_photo_placeholder" class="flex flex-col items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="mb-3 h-10 w-10 text-gray-600 transition-transform group-hover:-translate-y-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15a4.5 4.5 0 0 0 4.5 4.5h9a5.25 5.25 0 1 0-.16-10.498A6 6 0 0 0 4.5 9.75m7.5 8.25V9.75m0 0-3 3m3-3 3 3" />
+                            </svg>
+                            <span class="text-sm font-semibold text-gray-700">Haz clic para subir tu foto</span>
+                            <span class="mt-1 text-xs text-gray-600">Formatos permitidos: .png, .jpg y .jpeg</span>
+                            <span class="mt-1 text-xs text-gray-600">Tamaño máximo: 2MB</span>
                         </div>
+
+                        <img
+                            id="profile_photo_preview"
+                            src=""
+                            alt="Vista previa de foto de perfil"
+                            class="absolute inset-0 hidden h-full w-full object-cover"
+                        >
+
+                        <div id="profile_photo_preview_name" class="absolute inset-x-0 bottom-0 hidden bg-black/50 px-3 py-2 text-xs text-white"></div>
+                    </label>
 
                     <input
                         id="profile_photo"
@@ -99,11 +100,12 @@
             const form = document.getElementById('register-form');
             const input = document.getElementById('profile_photo');
             const error = document.getElementById('profile_photo_error');
-                const previewWrapper = document.getElementById('profile_photo_preview_wrapper');
+                const previewPlaceholder = document.getElementById('profile_photo_placeholder');
                 const previewImage = document.getElementById('profile_photo_preview');
-                const previewName = document.getElementById('profile_photo_name');
+                const previewName = document.getElementById('profile_photo_preview_name');
+                let currentObjectUrl = null;
 
-                if (!form || !input || !error || !previewWrapper || !previewImage || !previewName) {
+                if (!form || !input || !error || !previewPlaceholder || !previewImage || !previewName) {
                 return;
             }
 
@@ -143,16 +145,29 @@
             };
 
                 const resetPreview = () => {
+                    if (currentObjectUrl) {
+                        URL.revokeObjectURL(currentObjectUrl);
+                        currentObjectUrl = null;
+                    }
+
                     previewImage.src = '';
                     previewName.textContent = '';
-                    previewWrapper.classList.add('hidden');
+                    previewImage.classList.add('hidden');
+                    previewName.classList.add('hidden');
+                    previewPlaceholder.classList.remove('hidden');
                 };
 
                 const updatePreview = (file) => {
-                    const objectUrl = URL.createObjectURL(file);
-                    previewImage.src = objectUrl;
+                    if (currentObjectUrl) {
+                        URL.revokeObjectURL(currentObjectUrl);
+                    }
+
+                    currentObjectUrl = URL.createObjectURL(file);
+                    previewImage.src = currentObjectUrl;
                     previewName.textContent = file.name;
-                    previewWrapper.classList.remove('hidden');
+                    previewImage.classList.remove('hidden');
+                    previewName.classList.remove('hidden');
+                    previewPlaceholder.classList.add('hidden');
                 };
 
             input.addEventListener('change', () => {
