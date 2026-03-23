@@ -42,16 +42,19 @@
         @csrf
         @method('patch')
 
+        <p id="profile-update-success" class="hidden text-sm font-medium text-green-600"></p>
+
         <div>
             <x-input-label for="name" :value="__('Name')" />
             <x-text-input id="name" name="name" type="text" class="mt-1 block w-full" :value="old('name', $user->name)" required autofocus autocomplete="name" />
+            <p id="profile-name-error" class="mt-2 hidden text-sm text-red-600"></p>
             <x-input-error class="mt-2" :messages="$errors->get('name')" />
         </div>
 
         <div>
             <x-input-label for="email" :value="__('Email')" />
-            <x-text-input id="email" name="email" type="email" class="mt-1 block w-full" :value="old('email', $user->email)" required autocomplete="username" />
-            <x-input-error class="mt-2" :messages="$errors->get('email')" />
+            <x-text-input id="email" type="email" class="mt-1 block w-full bg-gray-100 text-gray-500 cursor-not-allowed" :value="$user->email" autocomplete="username" readonly disabled />
+            <p class="mt-2 text-xs text-gray-500">{{ __('This email belongs to your logged-in account and cannot be changed.') }}</p>
 
             @if ($user instanceof \Illuminate\Contracts\Auth\MustVerifyEmail && ! $user->hasVerifiedEmail())
                 <div>
@@ -111,17 +114,7 @@
         @endif
 
         <div class="flex items-center gap-4">
-            <x-primary-button>{{ __('Save') }}</x-primary-button>
-
-            @if (session('status') === 'profile-updated')
-                <p
-                    x-data="{ show: true }"
-                    x-show="show"
-                    x-transition
-                    x-init="setTimeout(() => show = false, 2000)"
-                    class="text-sm text-gray-600"
-                >{{ __('Saved.') }}</p>
-            @endif
+            <x-primary-button id="profile-update-submit">{{ __('Save') }}</x-primary-button>
         </div>
     </form>
 
@@ -130,11 +123,14 @@
             const form = document.getElementById('profile-update-form');
             const input = document.getElementById('profile_photo');
             const error = document.getElementById('profile_photo_error');
+            const nameError = document.getElementById('profile-name-error');
             const previewWrapper = document.getElementById('profile_photo_preview_wrapper');
             const previewImage = document.getElementById('profile_photo_preview');
             const previewName = document.getElementById('profile_photo_name');
+            const submitButton = document.getElementById('profile-update-submit');
+            const success = document.getElementById('profile-update-success');
 
-            if (!form || !input || !error || !previewWrapper || !previewImage || !previewName) {
+            if (!form || !input || !error || !nameError || !previewWrapper || !previewImage || !previewName || !submitButton || !success) {
                 return;
             }
 
@@ -208,7 +204,79 @@
                 if (message) {
                     event.preventDefault();
                     setError(message);
+                    return;
                 }
+
+                event.preventDefault();
+
+                error.textContent = '';
+                error.classList.add('hidden');
+                nameError.textContent = '';
+                nameError.classList.add('hidden');
+                success.textContent = '';
+                success.classList.add('hidden');
+
+                submitButton.disabled = true;
+                submitButton.classList.add('opacity-60', 'cursor-not-allowed');
+
+                fetch(form.action, {
+                    method: 'POST',
+                    body: new FormData(form),
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                })
+                    .then(async (response) => {
+                        const data = await response.json();
+
+                        if (!response.ok) {
+                            const errors = data.errors || {};
+
+                            if (errors.name) {
+                                nameError.textContent = Array.isArray(errors.name) ? errors.name[0] : errors.name;
+                                nameError.classList.remove('hidden');
+                            }
+
+                            if (errors.profile_photo) {
+                                error.textContent = Array.isArray(errors.profile_photo) ? errors.profile_photo[0] : errors.profile_photo;
+                                error.classList.remove('hidden');
+                            }
+
+                            return;
+                        }
+
+                        success.textContent = data.message || '{{ __('Profile updated successfully.') }}';
+                        success.classList.remove('hidden');
+
+                        const user = data.user || {};
+                        if (user.name) {
+                            document.querySelectorAll('[data-profile-name]').forEach((node) => {
+                                node.textContent = user.name;
+                            });
+                        }
+
+                        if (Object.prototype.hasOwnProperty.call(user, 'profile_photo_url')) {
+                            document.querySelectorAll('[data-profile-avatar]').forEach((node) => {
+                                if (node.tagName === 'IMG') {
+                                    if (user.profile_photo_url) {
+                                        node.src = user.profile_photo_url;
+                                        node.classList.remove('hidden');
+                                    } else {
+                                        node.classList.add('hidden');
+                                    }
+                                }
+                            });
+                        }
+                    })
+                    .catch(() => {
+                        nameError.textContent = '{{ __('An unexpected error occurred. Please try again.') }}';
+                        nameError.classList.remove('hidden');
+                    })
+                    .finally(() => {
+                        submitButton.disabled = false;
+                        submitButton.classList.remove('opacity-60', 'cursor-not-allowed');
+                    });
             });
         })();
     </script>

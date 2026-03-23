@@ -38,3 +38,22 @@ test('correct password must be provided to update password', function () {
         ->assertSessionHasErrorsIn('updatePassword', 'current_password')
         ->assertRedirect('/profile');
 });
+
+test('new password must be different from current password', function () {
+    $user = User::factory()->create();
+
+    $response = $this
+        ->actingAs($user)
+        ->from('/profile')
+        ->put('/password', [
+            'current_password' => 'password',
+            'password' => 'password',
+            'password_confirmation' => 'password',
+        ]);
+
+    $response
+        ->assertSessionHasErrorsIn('updatePassword', 'password')
+        ->assertRedirect('/profile');
+
+    $this->assertTrue(Hash::check('password', $user->fresh()->password));
+});

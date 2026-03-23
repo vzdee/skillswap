@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ProfileUpdateRequest;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -25,7 +26,7 @@ class ProfileController extends Controller
     /**
      * Update the user's profile information.
      */
-    public function update(ProfileUpdateRequest $request): RedirectResponse
+    public function update(ProfileUpdateRequest $request): RedirectResponse|JsonResponse
     {
         $user = $request->user();
         $validated = $request->validated();
@@ -49,11 +50,21 @@ class ProfileController extends Controller
             $user->profile_photo_path = $request->file('profile_photo')->store('profile-photos', 'public');
         }
 
-        if ($user->isDirty('email')) {
-            $user->email_verified_at = null;
-        }
-
         $user->save();
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'status' => 'profile-updated',
+                'message' => __('Profile updated successfully.'),
+                'user' => [
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'profile_photo_url' => $user->profile_photo_path
+                        ? asset('storage/' . $user->profile_photo_path)
+                        : null,
+                ],
+            ]);
+        }
 
         return Redirect::route('profile.edit')->with('status', 'profile-updated');
     }
@@ -69,6 +80,10 @@ class ProfileController extends Controller
 
         $user = $request->user();
 
+        if ($user->profile_photo_path) {
+            Storage::disk('public')->delete($user->profile_photo_path);
+        }
+
         Auth::logout();
 
         $user->delete();
@@ -76,6 +91,6 @@ class ProfileController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return Redirect::to('/login');
+        return Redirect::to('/');
     }
 }

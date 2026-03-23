@@ -1,7 +1,9 @@
 <nav x-data="{ open: false }" class="bg-white border-b border-gray-100">
     @php
-        $profilePhotoUrl = Auth::user()->profile_photo_path
-            ? asset('storage/' . Auth::user()->profile_photo_path)
+        $authUser = \App\Models\User::query()->findOrFail(Auth::id());
+
+        $profilePhotoUrl = $authUser->profile_photo_path
+            ? asset('storage/' . $authUser->profile_photo_path)
             : null;
     @endphp
 
@@ -32,16 +34,17 @@
                             @if ($profilePhotoUrl)
                                 <img
                                     src="{{ $profilePhotoUrl }}"
-                                    alt="Foto de perfil de {{ Auth::user()->name }}"
+                                    alt="Foto de perfil de {{ $authUser->name }}"
+                                    data-profile-avatar
                                     class="h-9 w-9 rounded-full object-cover border border-gray-200"
                                 >
                             @else
                                 <div class="h-9 w-9 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-semibold border border-blue-200">
-                                    {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
+                                    {{ strtoupper(substr($authUser->name, 0, 1)) }}
                                 </div>
                             @endif
 
-                            <div class="ms-3">{{ Auth::user()->name }}</div>
+                            <div class="ms-3" data-profile-name>{{ $authUser->name }}</div>
 
                             <div class="ms-1">
                                 <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
@@ -54,10 +57,6 @@
                     <x-slot name="content">
                         <x-dropdown-link :href="route('profile.edit')">
                             {{ __('Ajustes de Perfil') }}
-                        </x-dropdown-link>
-
-                        <x-dropdown-link :href="route('profile.edit')">
-                            {{ __('Cambiar Contraseña') }}
                         </x-dropdown-link>
 
                         <!-- Authentication -->
@@ -100,17 +99,18 @@
                 @if ($profilePhotoUrl)
                     <img
                         src="{{ $profilePhotoUrl }}"
-                        alt="Foto de perfil de {{ Auth::user()->name }}"
+                        alt="Foto de perfil de {{ $authUser->name }}"
+                        data-profile-avatar
                         class="h-14 w-14 rounded-full object-cover border border-gray-200 mb-3"
                     >
                 @else
                     <div class="h-14 w-14 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-xl font-semibold border border-blue-200 mb-3">
-                        {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
+                        {{ strtoupper(substr($authUser->name, 0, 1)) }}
                     </div>
                 @endif
 
-                <div class="font-medium text-base text-gray-800">{{ Auth::user()->name }}</div>
-                <div class="font-medium text-sm text-gray-500">{{ Auth::user()->email }}</div>
+                <div class="font-medium text-base text-gray-800" data-profile-name>{{ $authUser->name }}</div>
+                <div class="font-medium text-sm text-gray-500">{{ $authUser->email }}</div>
             </div>
 
             <div class="mt-3 space-y-1">
