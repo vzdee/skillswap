@@ -1,5 +1,5 @@
 <x-guest-layout>
-    <form method="POST" action="{{ route('register') }}" enctype="multipart/form-data">
+    <form id="register-form" method="POST" action="{{ route('register') }}" enctype="multipart/form-data">
         @csrf
 
         <p class="text-orange-500 mb-5 font-semibold">Los campos obligatorios están marcados con un asterisco (*).</p>
@@ -52,9 +52,19 @@
                             <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15a4.5 4.5 0 0 0 4.5 4.5h9a5.25 5.25 0 1 0-.16-10.498A6 6 0 0 0 4.5 9.75m7.5 8.25V9.75m0 0-3 3m3-3 3 3" />
                         </svg>
                         <span class="text-sm font-semibold text-gray-700">Haz clic para subir tu foto</span>
-                        <span class="mt-1 text-xs text-gray-600">Formatos permitidos: .png, .jpg</span>
-                        <span class="mt-1 text-xs text-gray-600">Tamaño máximo: 3MB</span>
+                        <span class="mt-1 text-xs text-gray-600">Formatos permitidos: .png, .jpg y .jpeg</span>
+                        <span class="mt-1 text-xs text-gray-600">Tamaño máximo: 2MB</span>
                     </label>
+                    
+                        <div id="profile_photo_preview_wrapper" class="mt-3 hidden">
+                            <img
+                                id="profile_photo_preview"
+                                src=""
+                                alt="Vista previa de foto de perfil"
+                                class="h-24 w-24 rounded-full object-cover border border-gray-300 mx-auto"
+                            >
+                            <p id="profile_photo_name" class="mt-2 text-center text-xs text-gray-600"></p>
+                        </div>
 
                     <input
                         id="profile_photo"
@@ -62,10 +72,10 @@
                         name="profile_photo"
                         accept=".png,.jpg,.jpeg,image/png,image/jpeg"
                         class="sr-only"
-                        onchange="if (this.files[0] && this.files[0].size > 3145728) { alert('La imagen no puede superar 3MB.'); this.value = ''; }"
                     />
 
                     <x-input-error :messages="$errors->get('profile_photo')" class="mt-2" />
+                    <p id="profile_photo_error" class="mt-2 text-sm text-red-600 hidden"></p>
                 </div>
             </div>
         </div>
@@ -83,4 +93,92 @@
             </a>
         </div>
     </form>
+
+    <script>
+        (() => {
+            const form = document.getElementById('register-form');
+            const input = document.getElementById('profile_photo');
+            const error = document.getElementById('profile_photo_error');
+                const previewWrapper = document.getElementById('profile_photo_preview_wrapper');
+                const previewImage = document.getElementById('profile_photo_preview');
+                const previewName = document.getElementById('profile_photo_name');
+
+                if (!form || !input || !error || !previewWrapper || !previewImage || !previewName) {
+                return;
+            }
+
+            const maxBytes = 2 * 1024 * 1024;
+            const allowedTypes = ['image/png', 'image/jpeg'];
+            const allowedExtensions = ['png', 'jpg', 'jpeg'];
+
+            const getExtension = (filename) => filename.split('.').pop().toLowerCase();
+
+            const validateFile = (file) => {
+                if (!file) {
+                    return '';
+                }
+
+                const extension = getExtension(file.name || '');
+                const isAllowedType = allowedTypes.includes(file.type) || allowedExtensions.includes(extension);
+
+                if (!isAllowedType) {
+                    return 'Solo se permiten archivos PNG o JPG.';
+                }
+
+                if (file.size > maxBytes) {
+                    return 'La imagen no puede superar 2MB.';
+                }
+
+                return '';
+            };
+
+            const setError = (message) => {
+                if (message) {
+                    error.textContent = message;
+                    error.classList.remove('hidden');
+                } else {
+                    error.textContent = '';
+                    error.classList.add('hidden');
+                }
+            };
+
+                const resetPreview = () => {
+                    previewImage.src = '';
+                    previewName.textContent = '';
+                    previewWrapper.classList.add('hidden');
+                };
+
+                const updatePreview = (file) => {
+                    const objectUrl = URL.createObjectURL(file);
+                    previewImage.src = objectUrl;
+                    previewName.textContent = file.name;
+                    previewWrapper.classList.remove('hidden');
+                };
+
+            input.addEventListener('change', () => {
+                    const file = input.files[0];
+                    const message = validateFile(file);
+
+                if (message) {
+                    input.value = '';
+                        resetPreview();
+                    } else if (file) {
+                        updatePreview(file);
+                    } else {
+                        resetPreview();
+                }
+
+                setError(message);
+            });
+
+            form.addEventListener('submit', (event) => {
+                const message = validateFile(input.files[0]);
+
+                if (message) {
+                    event.preventDefault();
+                    setError(message);
+                }
+            });
+        })();
+    </script>
 </x-guest-layout>

@@ -1,4 +1,10 @@
 <nav x-data="{ open: false }" class="bg-white border-b border-gray-100">
+    @php
+        $profilePhotoUrl = Auth::user()->profile_photo_path
+            ? asset('storage/' . Auth::user()->profile_photo_path)
+            : null;
+    @endphp
+
     <!-- Primary Navigation Menu -->
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16">
@@ -23,7 +29,19 @@
                 <x-dropdown align="right" width="48">
                     <x-slot name="trigger">
                         <button class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-500 bg-white hover:text-gray-700 focus:outline-none transition ease-in-out duration-150">
-                            <div>{{ Auth::user()->name }}</div>
+                            @if ($profilePhotoUrl)
+                                <img
+                                    src="{{ $profilePhotoUrl }}"
+                                    alt="Foto de perfil de {{ Auth::user()->name }}"
+                                    class="h-9 w-9 rounded-full object-cover border border-gray-200"
+                                >
+                            @else
+                                <div class="h-9 w-9 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-semibold border border-blue-200">
+                                    {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
+                                </div>
+                            @endif
+
+                            <div class="ms-3">{{ Auth::user()->name }}</div>
 
                             <div class="ms-1">
                                 <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
@@ -75,6 +93,18 @@
         <!-- Responsive Settings Options -->
         <div class="pt-4 pb-1 border-t border-gray-200">
             <div class="px-4">
+                @if ($profilePhotoUrl)
+                    <img
+                        src="{{ $profilePhotoUrl }}"
+                        alt="Foto de perfil de {{ Auth::user()->name }}"
+                        class="h-14 w-14 rounded-full object-cover border border-gray-200 mb-3"
+                    >
+                @else
+                    <div class="h-14 w-14 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-xl font-semibold border border-blue-200 mb-3">
+                        {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
+                    </div>
+                @endif
+
                 <div class="font-medium text-base text-gray-800">{{ Auth::user()->name }}</div>
                 <div class="font-medium text-sm text-gray-500">{{ Auth::user()->email }}</div>
             </div>
