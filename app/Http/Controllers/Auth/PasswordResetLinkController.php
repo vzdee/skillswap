@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
@@ -27,9 +29,23 @@ class PasswordResetLinkController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
-        $request->validate([
+        $validator = Validator::make($request->all(), [
             'email' => ['required', 'email'],
         ]);
+
+        if ($validator->fails()) {
+            return redirect()
+                ->route('password.request')
+                ->withErrors($validator)
+                ->withInput($request->only('email'));
+        }
+
+        if (! User::where('email', $request->email)->exists()) {
+            return redirect()
+                ->route('password.request')
+                ->withInput($request->only('email'))
+                ->withErrors(['email' => __('passwords.user')]);
+        }
 
         DB::table(config('auth.passwords.users.table', 'password_reset_tokens'))
             ->where('email', $request->email)
@@ -43,8 +59,8 @@ class PasswordResetLinkController extends Controller
         );
 
         return $status == Password::RESET_LINK_SENT
-                    ? back()->with('status', __($status))
-                    : back()->withInput($request->only('email'))
+                    ? redirect()->route('password.request')->with('status', __($status))
+                    : redirect()->route('password.request')->withInput($request->only('email'))
                         ->withErrors(['email' => __($status)]);
     }
 }

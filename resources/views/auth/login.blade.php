@@ -11,6 +11,7 @@
 
         <!-- Email Address -->
         <div>
+            <x-input-label for="email" :value="__('Correo Electrónico')" class="ml-2"/>
             <div class="relative mt-1">
                 <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-gray-500">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
@@ -24,6 +25,7 @@
 
         <!-- Password -->
         <div class="mt-8">
+            <x-input-label for="password" :value="__('Contraseña')" class="ml-2" />
             <div class="relative mt-1">
                 <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-gray-500">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true">

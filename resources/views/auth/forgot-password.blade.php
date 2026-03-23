@@ -11,6 +11,7 @@
         </div>
         <!-- Email Address -->
         <div>
+            <x-input-label for="email" :value="__('Correo Electrónico')" class="ml-2" />
             <x-text-input id="email" class="block mt-1 w-full bg-gray-200" type="email" name="email" :value="old('email')" placeholder="example@email.com *" required autofocus />
             <x-input-error :messages="$errors->get('email')" class="mt-2" />
             <p id="reset-cooldown-message" class="mt-2 hidden text-sm text-gray-600"></p>
@@ -30,13 +31,14 @@
 
     <script>
         (() => {
-            const form = document.getElementById('forgot-password-form');
             const sendButton = document.getElementById('send-reset-link-btn');
             const cooldownMessage = document.getElementById('reset-cooldown-message');
             const cooldownStorageKey = 'passwordResetCooldownEndsAt';
+            const hasStatus = @json(session()->has('status'));
+            const hasErrors = @json($errors->any());
             let interval = null;
 
-            if (!form || !sendButton || !cooldownMessage) {
+            if (!sendButton || !cooldownMessage) {
                 return;
             }
 
@@ -93,15 +95,11 @@
                 window.localStorage.removeItem(cooldownStorageKey);
             }
 
-            form.addEventListener('submit', () => {
-                if (!sendButton.disabled) {
-                    startCooldown(30);
-                }
-            });
-
-            @if (session('status'))
+            if (hasStatus) {
                 startCooldown(30);
-            @endif
+            } else if (hasErrors) {
+                stopCooldown();
+            }
         })();
     </script>
 </x-guest-layout>

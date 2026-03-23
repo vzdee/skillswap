@@ -9,6 +9,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rules;
 use Illuminate\Validation\ValidationException;
@@ -31,11 +32,21 @@ class NewPasswordController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
-        $request->validate([
+        $validator = Validator::make($request->all(), [
             'token' => ['required'],
             'email' => ['required', 'email'],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
+
+        if ($validator->fails()) {
+            return redirect()
+                ->route('password.reset', [
+                    'token' => $request->input('token'),
+                    'email' => $request->input('email'),
+                ])
+                ->withErrors($validator)
+                ->withInput($request->only('email'));
+        }
 
         // Here we will attempt to reset the user's password. If it is successful we
         // will update the password on an actual user model and persist it to the
@@ -57,7 +68,12 @@ class NewPasswordController extends Controller
         // redirect them back to where they came from with their error message.
         return $status == Password::PASSWORD_RESET
                     ? redirect()->route('login')->with('status', __($status))
-                    : back()->withInput($request->only('email'))
+                    : redirect()
+                        ->route('password.reset', [
+                            'token' => $request->input('token'),
+                            'email' => $request->input('email'),
+                        ])
+                        ->withInput($request->only('email'))
                         ->withErrors(['email' => __($status)]);
     }
 }

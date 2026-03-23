@@ -7,29 +7,33 @@
             <div>
                 <!-- Name -->
                 <div>
+                    <x-input-label for="name" :value="__('Nombre')" class="ml-2" />
                     <x-text-input id="name" class="block mt-1 w-full bg-gray-200" type="text" name="name" :value="old('name')" required autofocus autocomplete="name" placeholder="Nombre Completo *" />
                     <x-input-error :messages="$errors->get('name')" class="mt-2" />
                 </div>
 
                 <!-- Email Address -->
                 <div class="mt-6">
+                    <x-input-label for="email" :value="__('Correo Electrónico')" class="ml-2" />
                     <x-text-input id="email" class="block mt-2 w-full bg-gray-200" type="email" name="email" :value="old('email')" required autocomplete="username" placeholder="Correo Electronico *" />
                     <x-input-error :messages="$errors->get('email')" class="mt-2" />
                 </div>
 
                 <!-- Password -->
                 <div class="mt-6">
+                    <x-input-label for="password" :value="__('Contraseña')" class="ml-2"/>
                     <x-text-input id="password" class="block mt-1 w-full bg-gray-200"
                                     type="password"
                                     name="password"
                                     required autocomplete="new-password"
-                                    placeholder="Contraseña *"/>
+                                    placeholder="Almenos 8 carácteres *"/>
 
                     <x-input-error :messages="$errors->get('password')" class="mt-2" />
                 </div>
 
                 <!-- Confirm Password -->
                 <div class="mt-6">
+                    <x-input-label for="password_confirmation" :value="__('Confirmar Contraseña')" class="ml-2" />
                     <x-text-input id="password_confirmation" class="block mt-1 w-full bg-gray-200"
                                     type="password"
                                     name="password_confirmation" required autocomplete="new-password"
