@@ -5,7 +5,7 @@
         </h2>
 
         <p class="mt-1 text-sm text-gray-600">
-            {{ __('Ensure your account is using a long, random password to stay secure.') }}
+            {{ __('Asegúrate de que tu cuenta utiliza una contraseña larga y aleatoria para mantenerla segura. Una contraseña fuerte tiene al menos 8 caracteres.') }}
         </p>
     </header>
 
@@ -17,14 +17,14 @@
 
         <div>
             <x-input-label for="update_password_current_password" :value="__('Current Password')" />
-            <x-text-input id="update_password_current_password" name="current_password" type="password" class="mt-1 block w-full" autocomplete="current-password" placeholder="{{ __('Current Password') }}" />
+            <x-text-input id="update_password_current_password" name="current_password" type="password" class="mt-1 block w-full" autocomplete="current-password" placeholder="{{ __('Current Password *') }}" />
             <p id="update-password-current-error" class="mt-2 hidden text-sm text-red-600"></p>
             <x-input-error :messages="$errors->updatePassword->get('current_password')" class="mt-2" />
         </div>
 
         <div>
             <x-input-label for="update_password_password" :value="__('New Password')" />
-            <x-text-input id="update_password_password" name="password" type="password" class="mt-1 block w-full" autocomplete="new-password" placeholder="{{ __('At least 8 characters') }}" />
+            <x-text-input id="update_password_password" name="password" type="password" class="mt-1 block w-full" autocomplete="new-password" placeholder="{{ __('At least 8 characters *') }}" />
             <p id="update-password-new-error" class="mt-2 hidden text-sm text-red-600"></p>
             <x-input-error :messages="$errors->updatePassword->get('password')" class="mt-2" />
         </div>

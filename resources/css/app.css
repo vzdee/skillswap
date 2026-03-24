@@ -1,3 +1,69 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+.flatpickr-calendar {
+	border: 1px solid #dbeafe;
+	border-radius: 14px;
+	box-shadow: 0 16px 38px rgba(2, 6, 23, 0.16);
+	overflow: hidden;
+	font-size: 0.92rem;
+}
+
+.flatpickr-months {
+	background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%);
+	color: #ffffff;
+	padding: 4px 5px 0;
+}
+
+.flatpickr-current-month,
+.flatpickr-current-month .flatpickr-monthDropdown-months,
+.flatpickr-current-month input.cur-year {
+	color: #ffffff;
+	font-weight: 700;
+}
+
+.flatpickr-weekdays {
+	background: #eff6ff;
+}
+
+span.flatpickr-weekday {
+	color: #1e3a8a;
+	font-weight: 700;
+}
+
+.flatpickr-day {
+	border-radius: 9px;
+	font-weight: 600;
+	height: 34px;
+	line-height: 34px;
+	max-width: 34px;
+}
+
+.flatpickr-day:hover,
+.flatpickr-day:focus {
+	background: #dbeafe;
+	border-color: #dbeafe;
+}
+
+.flatpickr-day.today {
+	border-color: #60a5fa;
+}
+
+.flatpickr-day.selected,
+.flatpickr-day.startRange,
+.flatpickr-day.endRange {
+	background: #2563eb;
+	border-color: #2563eb;
+	color: #ffffff;
+}
+
+.flatpickr-day.prevMonthDay,
+.flatpickr-day.nextMonthDay {
+	color: #94a3b8;
+}
+
+.flatpickr-input[readonly] {
+	background-color: #ffffff;
+	cursor: pointer;
+}

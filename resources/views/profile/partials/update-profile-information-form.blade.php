@@ -19,30 +19,75 @@
         @csrf
     </form>
 
-    <div class="mt-4 flex items-center gap-4">
-        @if ($profilePhotoUrl)
-            <img
-                src="{{ $profilePhotoUrl }}"
-                alt="Foto de perfil de {{ $user->name }}"
-                class="h-20 w-20 rounded-full object-cover border border-gray-200"
-            >
-        @else
-            <div class="h-20 w-20 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-2xl font-semibold border border-blue-200">
-                {{ strtoupper(substr($user->name, 0, 1)) }}
-            </div>
-        @endif
-
-        <div>
-            <p class="text-sm font-semibold text-gray-700">Foto de perfil</p>
-            <p class="text-xs text-gray-500">Puedes cambiarla aquí cuando quieras.</p>
-        </div>
-    </div>
-
     <form id="profile-update-form" method="post" action="{{ route('profile.update') }}" enctype="multipart/form-data" class="mt-6 space-y-6">
         @csrf
         @method('patch')
 
         <p id="profile-update-success" class="hidden text-sm font-medium text-green-600"></p>
+
+        <div class="flex flex-col gap-4 rounded-lg border border-gray-200 p-4 md:flex-row md:items-center md:justify-between">
+            <div class="flex items-center gap-4">
+                @if ($profilePhotoUrl)
+                    <img
+                        src="{{ $profilePhotoUrl }}"
+                        alt="Foto de perfil de {{ $user->name }}"
+                        class="h-24 w-24 rounded-full object-cover border border-gray-200"
+                    >
+                @else
+                    <div class="h-20 w-20 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-2xl font-semibold border border-blue-200">
+                        {{ strtoupper(substr($user->name, 0, 1)) }}
+                    </div>
+                @endif
+            </div>
+
+            <div class="w-full md:max-w-sm">
+                <p class="text-sm font-medium text-gray-700">{{ __('Nueva foto de perfil (opcional)') }}</p>
+                <input
+                    id="profile_photo"
+                    type="file"
+                    name="profile_photo"
+                    accept=".png,.jpg,.jpeg,image/png,image/jpeg"
+                    class="hidden"
+                >
+                <button
+                    id="profile-photo-trigger"
+                    type="button"
+                    class="mt-1 inline-flex items-center rounded-full border-0 bg-blue-100 px-4 py-2 text-sm font-semibold text-blue-700 transition hover:bg-blue-200"
+                >
+                    Choose File
+                </button>
+                <input id="remove_profile_photo" type="hidden" name="remove_profile_photo" value="0">
+                <p class="mt-1 text-xs text-gray-500">Formatos permitidos: .png, .jpg. Tamaño máximo: 2MB.</p>
+                <x-input-error class="mt-2" :messages="$errors->get('profile_photo')" />
+                <p id="profile_photo_error" class="mt-2 text-sm text-red-600 hidden"></p>
+
+                <div id="profile_photo_preview_wrapper" class="mt-3 hidden">
+                    <img
+                        id="profile_photo_preview"
+                        src=""
+                        alt="Vista previa de nueva foto de perfil"
+                        class="h-24 w-24 rounded-full object-cover border border-gray-300"
+                    >
+                    <p id="profile_photo_name" class="mt-2 text-xs text-gray-600"></p>
+                </div>
+
+                @if ($profilePhotoUrl)
+                    <div class="mt-3">
+                        <button
+                            id="open-remove-photo-modal"
+                            type="button"
+                            class="inline-flex items-center gap-1.5 rounded-full bg-red-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-red-700"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                                <path d="M9 3.75A2.25 2.25 0 0 1 11.25 1.5h1.5A2.25 2.25 0 0 1 15 3.75V4.5h3.75a.75.75 0 0 1 0 1.5h-.633l-.86 13.75A2.25 2.25 0 0 1 15.013 22.5H8.987a2.25 2.25 0 0 1-2.244-2.25L5.883 6H5.25a.75.75 0 0 1 0-1.5H9v-.75Zm1.5.75h3v-.75a.75.75 0 0 0-.75-.75h-1.5a.75.75 0 0 0-.75.75v.75Zm-1.495 3a.75.75 0 0 0-.75.798l.6 10.5a.75.75 0 1 0 1.498-.086l-.6-10.5a.75.75 0 0 0-.748-.712Zm6.74.799a.75.75 0 1 0-1.498-.086l-.6 10.5a.75.75 0 0 0 1.498.086l.6-10.5Z" />
+                            </svg>
+                            Remover foto
+                        </button>
+                    </div>
+                    <x-input-error class="mt-2" :messages="$errors->get('remove_profile_photo')" />
+                @endif
+            </div>
+        </div>
 
         <div>
             <x-input-label for="name" :value="__('Name')" />
@@ -76,61 +121,97 @@
         </div>
 
         <div>
-            <x-input-label for="profile_photo" :value="__('Nueva foto de perfil (opcional)')" />
-            <input
-                id="profile_photo"
-                type="file"
-                name="profile_photo"
-                accept=".png,.jpg,.jpeg,image/png,image/jpeg"
-                class="mt-1 block w-full text-sm text-gray-700 file:mr-4 file:rounded-full file:border-0 file:bg-blue-100 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-blue-700 hover:file:bg-blue-200"
-            >
-            <p class="mt-1 text-xs text-gray-500">Formatos permitidos: .png, .jpg. Tamaño máximo: 2MB.</p>
-            <x-input-error class="mt-2" :messages="$errors->get('profile_photo')" />
-            <p id="profile_photo_error" class="mt-2 text-sm text-red-600 hidden"></p>
-
-            <div id="profile_photo_preview_wrapper" class="mt-3 hidden">
-                <img
-                    id="profile_photo_preview"
-                    src=""
-                    alt="Vista previa de nueva foto de perfil"
-                    class="h-24 w-24 rounded-full object-cover border border-gray-300"
-                >
-                <p id="profile_photo_name" class="mt-2 text-xs text-gray-600"></p>
-            </div>
+            <x-input-label for="birth_date" value="Fecha de nacimiento" />
+            <x-text-input
+                id="birth_date"
+                name="birth_date"
+                type="text"
+                class="mt-1 block w-full"
+                :value="old('birth_date', optional(data_get($user, 'birth_date'))->format('Y-m-d'))"
+                data-birth-date-picker
+                placeholder="Selecciona tu fecha de nacimiento"
+            />
+            <p id="profile-birth-date-error" class="mt-2 hidden text-sm text-red-600"></p>
+            <x-input-error class="mt-2" :messages="$errors->get('birth_date')" />
         </div>
 
-        @if ($profilePhotoUrl)
-            <div class="flex items-center gap-2">
-                <input
-                    id="remove_profile_photo"
-                    type="checkbox"
-                    name="remove_profile_photo"
-                    value="1"
-                    class="rounded border-gray-300 text-red-600 shadow-sm focus:ring-red-500"
+        <div>
+            <x-input-label for="career" value="Carrera" />
+            <div class="relative mt-1">
+                <select
+                    id="career"
+                    name="career"
+                    class="block w-full appearance-none rounded-2xl border-gray-300 py-2.5 pr-10 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                 >
-                <label for="remove_profile_photo" class="text-sm text-gray-700">Quitar mi foto actual</label>
+                    <option value="">Selecciona tu carrera</option>
+                    <option value="derecho" @selected(old('career', data_get($user, 'career')) === 'derecho')>Ingenieria Biomedica</option>
+                    <option value="ingenieria_sistemas" @selected(old('career', data_get($user, 'career')) === 'ingenieria_sistemas')>Ingenieria en Sistemas</option>
+                    <option value="administracion" @selected(old('career', data_get($user, 'career')) === 'administracion')>Administracion</option>
+                    <option value="derecho" @selected(old('career', data_get($user, 'career')) === 'derecho')>Ingenieria Industrial</option>
+                </select>
+                <span class="pointer-events-none absolute inset-y-0 right-3 flex items-center text-gray-500">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                        <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.168l3.71-3.938a.75.75 0 1 1 1.08 1.04l-4.25 4.512a.75.75 0 0 1-1.08 0L5.21 8.27a.75.75 0 0 1 .02-1.06Z" clip-rule="evenodd" />
+                    </svg>
+                </span>
             </div>
-            <x-input-error class="mt-2" :messages="$errors->get('remove_profile_photo')" />
-        @endif
+            <p id="profile-career-error" class="mt-2 hidden text-sm text-red-600"></p>
+            <x-input-error class="mt-2" :messages="$errors->get('career')" />
+        </div>
 
         <div class="flex items-center gap-4">
             <x-primary-button id="profile-update-submit">{{ __('Save') }}</x-primary-button>
         </div>
     </form>
 
+    @if ($profilePhotoUrl)
+        <div id="remove-photo-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-gray-900/60 px-4 opacity-0 transition-opacity duration-500 ease-out">
+            <div id="remove-photo-modal-panel" class="w-full max-w-md rounded-xl bg-white p-6 shadow-xl opacity-0 scale-95 translate-y-1 transition duration-200 ease-out">
+                <h3 class="text-lg font-semibold text-gray-900">Eliminar foto de perfil</h3>
+                <p class="mt-2 text-sm text-gray-600">¿Seguro que quieres borrar tu foto de perfil? Esta acción no se puede deshacer.</p>
+
+                <div class="mt-6 flex items-center justify-end gap-3">
+                    <button
+                        id="cancel-remove-photo"
+                        type="button"
+                        class="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
+                    >
+                        Cancelar
+                    </button>
+                    <button
+                        id="confirm-remove-photo"
+                        type="button"
+                        class="rounded-md bg-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-700"
+                    >
+                        Confirmar
+                    </button>
+                </div>
+            </div>
+        </div>
+    @endif
+
     <script>
         (() => {
             const form = document.getElementById('profile-update-form');
             const input = document.getElementById('profile_photo');
+            const photoTrigger = document.getElementById('profile-photo-trigger');
+            const removePhotoInput = document.getElementById('remove_profile_photo');
+            const openRemovePhotoModalButton = document.getElementById('open-remove-photo-modal');
+            const removePhotoModal = document.getElementById('remove-photo-modal');
+            const removePhotoModalPanel = document.getElementById('remove-photo-modal-panel');
+            const cancelRemovePhotoButton = document.getElementById('cancel-remove-photo');
+            const confirmRemovePhotoButton = document.getElementById('confirm-remove-photo');
             const error = document.getElementById('profile_photo_error');
             const nameError = document.getElementById('profile-name-error');
+            const birthDateError = document.getElementById('profile-birth-date-error');
+            const careerError = document.getElementById('profile-career-error');
             const previewWrapper = document.getElementById('profile_photo_preview_wrapper');
             const previewImage = document.getElementById('profile_photo_preview');
             const previewName = document.getElementById('profile_photo_name');
             const submitButton = document.getElementById('profile-update-submit');
             const success = document.getElementById('profile-update-success');
 
-            if (!form || !input || !error || !nameError || !previewWrapper || !previewImage || !previewName || !submitButton || !success) {
+            if (!form || !input || !photoTrigger || !removePhotoInput || !error || !nameError || !birthDateError || !careerError || !previewWrapper || !previewImage || !previewName || !submitButton || !success) {
                 return;
             }
 
@@ -182,7 +263,12 @@
                 previewWrapper.classList.remove('hidden');
             };
 
+            photoTrigger.addEventListener('click', () => {
+                input.click();
+            });
+
             input.addEventListener('change', () => {
+                removePhotoInput.value = '0';
                 const file = input.files[0];
                 const message = validateFile(file);
 
@@ -213,6 +299,10 @@
                 error.classList.add('hidden');
                 nameError.textContent = '';
                 nameError.classList.add('hidden');
+                birthDateError.textContent = '';
+                birthDateError.classList.add('hidden');
+                careerError.textContent = '';
+                careerError.classList.add('hidden');
                 success.textContent = '';
                 success.classList.add('hidden');
 
@@ -238,6 +328,16 @@
                                 nameError.classList.remove('hidden');
                             }
 
+                            if (errors.birth_date) {
+                                birthDateError.textContent = Array.isArray(errors.birth_date) ? errors.birth_date[0] : errors.birth_date;
+                                birthDateError.classList.remove('hidden');
+                            }
+
+                            if (errors.career) {
+                                careerError.textContent = Array.isArray(errors.career) ? errors.career[0] : errors.career;
+                                careerError.classList.remove('hidden');
+                            }
+
                             if (errors.profile_photo) {
                                 error.textContent = Array.isArray(errors.profile_photo) ? errors.profile_photo[0] : errors.profile_photo;
                                 error.classList.remove('hidden');
@@ -245,6 +345,8 @@
 
                             return;
                         }
+
+                        removePhotoInput.value = '0';
 
                         success.textContent = data.message || '{{ __('Profile updated successfully.') }}';
                         success.classList.remove('hidden');
@@ -278,6 +380,47 @@
                         submitButton.classList.remove('opacity-60', 'cursor-not-allowed');
                     });
             });
+
+            if (openRemovePhotoModalButton && removePhotoModal && removePhotoModalPanel && cancelRemovePhotoButton && confirmRemovePhotoButton) {
+                const openRemovePhotoModal = () => {
+                    removePhotoModal.classList.remove('hidden');
+                    removePhotoModal.classList.add('flex');
+
+                    requestAnimationFrame(() => {
+                        removePhotoModal.classList.add('opacity-100');
+                        removePhotoModalPanel.classList.add('opacity-100', 'scale-100', 'translate-y-0');
+                        removePhotoModalPanel.classList.remove('opacity-0', 'scale-95', 'translate-y-1');
+                    });
+                };
+
+                const closeRemovePhotoModal = () => {
+                    removePhotoModal.classList.remove('opacity-100');
+                    removePhotoModalPanel.classList.remove('opacity-100', 'scale-100', 'translate-y-0');
+                    removePhotoModalPanel.classList.add('opacity-0', 'scale-95', 'translate-y-1');
+
+                    window.setTimeout(() => {
+                        removePhotoModal.classList.add('hidden');
+                        removePhotoModal.classList.remove('flex');
+                    }, 200);
+                };
+
+                openRemovePhotoModalButton.addEventListener('click', openRemovePhotoModal);
+                cancelRemovePhotoButton.addEventListener('click', closeRemovePhotoModal);
+
+                removePhotoModal.addEventListener('click', (event) => {
+                    if (event.target === removePhotoModal) {
+                        closeRemovePhotoModal();
+                    }
+                });
+
+                confirmRemovePhotoButton.addEventListener('click', () => {
+                    removePhotoInput.value = '1';
+                    input.value = '';
+                    resetPreview();
+                    closeRemovePhotoModal();
+                    form.requestSubmit();
+                });
+            }
         })();
     </script>
 </section>
