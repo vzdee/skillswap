@@ -12,7 +12,7 @@
         <!-- Email Address -->
         <div>
             <x-input-label for="email" :value="__('Correo Electrónico')" class="ml-2" />
-            <x-text-input id="email" class="block mt-1 w-full bg-gray-200" type="email" name="email" :value="old('email')" placeholder="example@email.com *" required autofocus />
+            <x-text-input id="email" class="block mt-1 w-full bg-gray-200" type="email" name="email" :value="old('email')" placeholder="example@email.com *" required autofocus autocomplete="username" autocapitalize="none" spellcheck="false" />
             <x-input-error :messages="$errors->get('email')" class="mt-2" />
             <p id="reset-cooldown-message" class="mt-2 hidden text-sm text-gray-600"></p>
         </div>
@@ -31,6 +31,7 @@
 
     <script>
         (() => {
+            const emailInput = document.getElementById('email');
             const sendButton = document.getElementById('send-reset-link-btn');
             const cooldownMessage = document.getElementById('reset-cooldown-message');
             const cooldownStorageKey = 'passwordResetCooldownEndsAt';
@@ -40,6 +41,16 @@
 
             if (!sendButton || !cooldownMessage) {
                 return;
+            }
+
+            if (emailInput) {
+                const enforceLowercase = () => {
+                    emailInput.value = emailInput.value.toLowerCase();
+                };
+
+                emailInput.addEventListener('input', enforceLowercase);
+                emailInput.addEventListener('change', enforceLowercase);
+                enforceLowercase();
             }
 
             const formatSeconds = (seconds) => {

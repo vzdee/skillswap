@@ -6,7 +6,7 @@
         @csrf
 
         <div class="flex justify-center">
-            <p class="text-3xl font-semibold p-8">Bienvenido</p>
+            <p class="px-2 py-4 text-2xl font-semibold sm:py-8 sm:text-3xl">Bienvenido</p>
         </div>
 
         <!-- Email Address -->
@@ -43,7 +43,7 @@
         </div>
 
         <!-- Remember Me -->
-        <div class="flex mt-4 justify-end p-5">
+        <div class="mt-4 flex justify-end px-1">
                 @if (Route::has('password.request'))
                     <a class="underline text-sm text-gray-600 hover:text-gray-900 text-[1em] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" href="{{ route('password.request') }}">
                         {{ __('Recuperar contraseña?') }}
@@ -51,14 +51,14 @@
                 @endif
         </div>
 
-        <div class="flex items-center justify-center mt-5 mb-10">
+        <div class="mb-8 mt-5 flex items-center justify-center sm:mb-10">
             <x-primary-button class="mt-4 bg-blue-400 hover:bg-blue-500 text-white font-bold text-[1em] py-3 px-4 focus:outline-none focus:shadow-outline rounded-full">
                 {{ __('Iniciar Sesión') }}
             </x-primary-button>
         </div>
 
-        <div class="flex mt-4 align-center justify-evenly p-5">
-            <p class="text-[1em] text-color-gray-300 justify-center">¿No tienes cuenta?</p>
+        <div class="mt-2 flex flex-col items-center justify-center gap-2 px-2 pb-2 text-center sm:mt-4 sm:flex-row sm:gap-4 sm:text-left">
+            <p class="text-[1em] text-gray-500">¿No tienes cuenta?</p>
             <a class="underline text-[1em] text-blue-400 hover:text-gray-900 font-bold focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" href="{{ route('register') }}">
                     {{ __('Registrar Cuenta') }}
             </a>

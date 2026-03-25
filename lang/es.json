@@ -27,5 +27,6 @@
     "At least 8 characters": "Al menos 8 caracteres",
     "Password updated successfully.": "Contraseña actualizada correctamente.",
     "Profile updated successfully.": "Perfil actualizado correctamente.",
-    "An unexpected error occurred. Please try again.": "Ocurrió un error inesperado. Inténtalo nuevamente."
+    "An unexpected error occurred. Please try again.": "Ocurrió un error inesperado. Inténtalo nuevamente.",
+    "The email field must be lowercase": "El campo correo electrónico debe estar en minúsculas"
 }

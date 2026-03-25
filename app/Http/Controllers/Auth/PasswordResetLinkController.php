@@ -30,7 +30,7 @@ class PasswordResetLinkController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $validator = Validator::make($request->all(), [
-            'email' => ['required', 'email'],
+            'email' => ['required', 'email', 'lowercase'],
         ]);
 
         if ($validator->fails()) {

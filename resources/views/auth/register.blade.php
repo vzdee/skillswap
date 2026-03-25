@@ -2,7 +2,7 @@
     <form id="register-form" method="POST" action="{{ route('register') }}" enctype="multipart/form-data">
         @csrf
 
-        <p class="text-orange-500 mb-5 font-semibold">Los campos obligatorios están marcados con un asterisco (*).</p>
+        <p class="mb-5 text-sm font-semibold text-orange-500 sm:text-base">Los campos obligatorios están marcados con un asterisco (*).</p>
         <div class="grid grid-cols-1 gap-6 md:grid-cols-2 md:gap-8">
             <div>
                 <!-- Name -->
@@ -43,11 +43,11 @@
                 </div>
             </div>
 
-            <div class="flex h-full flex-col items-center justify-center">
+            <div class="flex h-full flex-col items-center justify-start md:justify-center">
                 <div class="w-full max-w-sm">
                     <label for="profile_photo" class="mb-2 block text-center text-md font-semibold text-gray-700">Sube tu foto de perfil</label>
 
-                    <label for="profile_photo" class="group relative flex min-h-56 w-full cursor-pointer flex-col items-center justify-center overflow-hidden rounded-2xl border border-dashed border-gray-400 bg-gray-200 px-6 py-10 text-center transition-colors hover:bg-gray-300">
+                    <label for="profile_photo" class="group relative flex min-h-48 w-full cursor-pointer flex-col items-center justify-center overflow-hidden rounded-2xl border border-dashed border-gray-400 bg-gray-200 px-6 py-8 text-center transition-colors hover:bg-gray-300 sm:min-h-56 sm:py-10">
                         <div id="profile_photo_placeholder" class="flex flex-col items-center justify-center">
                             <svg xmlns="http://www.w3.org/2000/svg" class="mb-3 h-10 w-10 text-gray-600 transition-transform group-hover:-translate-y-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7" aria-hidden="true">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15a4.5 4.5 0 0 0 4.5 4.5h9a5.25 5.25 0 1 0-.16-10.498A6 6 0 0 0 4.5 9.75m7.5 8.25V9.75m0 0-3 3m3-3 3 3" />
@@ -81,14 +81,14 @@
             </div>
         </div>
         
-        <div class="flex items-center justify-center mt-5 mb-10">
+        <div class="mb-8 mt-5 flex items-center justify-center sm:mb-10">
             <x-primary-button class=" bg-blue-400 hover:bg-blue-500 text-white font-bold text-[1em] py-3 px-4 focus:outline-none focus:shadow-outline rounded-full">
                     {{ __('Registrar') }}
                 </x-primary-button>
         </div>
 
-        <div class="flex mt-4 align-center justify-evenly p-5">
-            <p class="text-[1em] text-color-gray-300 justify-center">¿Ya tienes cuenta?</p>
+        <div class="mt-2 flex flex-col items-center justify-center gap-2 px-2 pb-2 text-center sm:mt-4 sm:flex-row sm:gap-4 sm:text-left">
+            <p class="text-[1em] text-gray-500">¿Ya tienes cuenta?</p>
             <a href="{{ route('login') }}" class="underline text-[1em] text-blue-400 hover:text-gray-900 font-bold focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
                 {{ __('Inciar Sesión') }}
             </a>
