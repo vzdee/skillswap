@@ -26,7 +26,7 @@
                                     type="password"
                                     name="password"
                                     required autocomplete="new-password"
-                                    placeholder="Almenos 8 carácteres *"/>
+                                    placeholder="Al menos 8 carácteres *"/>
 
                     <x-input-error :messages="$errors->get('password')" class="mt-2" />
                 </div>

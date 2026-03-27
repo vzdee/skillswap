@@ -2,6 +2,16 @@
     @php
         $profilePhotoUrl = $user->profile_photo_path ? asset('storage/' . $user->profile_photo_path) : null;
         $age = $user->birth_date?->age;
+        $careerLabels = [
+            'ingenieria_biomedica' => 'Ingenieria Biomedica',
+            'derecho' => 'Ingenieria Biomedica',
+            'ingenieria_sistemas' => 'Ingenieria En Sistemas',
+            'administracion' => 'Administracion',
+            'ingenieria_industrial' => 'Ingenieria Industrial',
+        ];
+        $careerLabel = $user->career
+            ? ($careerLabels[$user->career] ?? \Illuminate\Support\Str::headline(str_replace('_', ' ', $user->career)))
+            : null;
     @endphp
 
     <div class="py-8 px-4 sm:px-6">
@@ -19,10 +29,8 @@
                         @if ($profilePhotoUrl)
                             <img src="{{ $profilePhotoUrl }}" alt="Foto de perfil" class="w-28 h-28 sm:w-36 sm:h-36 rounded-full object-cover border border-gray-200">
                         @else
-                            <div class="w-28 h-28 sm:w-36 sm:h-36 bg-blue-500 rounded-full flex items-center justify-center">
-                                <svg class="w-14 h-14 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path>
-                                </svg>
+                            <div class="w-28 h-28 sm:w-36 sm:h-36 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-2xl sm:text-3xl font-semibold border border-blue-200">
+                                {{ strtoupper(substr($user->name, 0, 1)) }}
                             </div>
                         @endif
                     </div>
@@ -37,13 +45,13 @@
 
                         <div class="mt-2 space-y-1 text-md text-gray-700">
                             @if ($age)
-                                <p>{{ $age }} años</p>
+                                <p>Tengo {{ $age }} años</p>
                             @else
                                 <p class="text-sm text-red-600 font-medium">Debes colocar tu fecha de nacimiento para mostrar tu edad.</p>
                             @endif
 
-                            @if ($user->career)
-                                <p>{{ str_replace('_', ' ', $user->career) }}</p>
+                            @if ($careerLabel)
+                                <p>Estudio {{ $careerLabel }}</p>
                             @else
                                 <p class="text-sm text-red-600 font-medium">Debes seleccionar una carrera para mostrarla en tu perfil.</p>
                             @endif

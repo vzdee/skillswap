@@ -139,10 +139,10 @@
                     class="block w-full appearance-none rounded-2xl border-gray-300 py-2.5 pr-10 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                 >
                     <option value="">Selecciona tu carrera</option>
-                    <option value="derecho" @selected(old('career', data_get($user, 'career')) === 'derecho')>Ingenieria Biomedica</option>
+                    <option value="ingenieria_biomedica" @selected(old('career', data_get($user, 'career')) === 'ingenieria_biomedica' || old('career', data_get($user, 'career')) === 'derecho')>Ingenieria Biomedica</option>
                     <option value="ingenieria_sistemas" @selected(old('career', data_get($user, 'career')) === 'ingenieria_sistemas')>Ingenieria en Sistemas</option>
-                    <option value="administracion" @selected(old('career', data_get($user, 'career')) === 'administracion')>Administracion</option>
-                    <option value="derecho" @selected(old('career', data_get($user, 'career')) === 'derecho')>Ingenieria Industrial</option>
+                    <option value="administracion_de_empresas" @selected(old('career', data_get($user, 'career')) === 'administracion_de_empresas')>Administracion de Empresas</option>
+                    <option value="ingenieria_industrial" @selected(old('career', data_get($user, 'career')) === 'ingenieria_industrial')>Ingenieria Industrial</option>
                 </select>
                 <span class="pointer-events-none absolute inset-y-0 right-3 flex items-center text-gray-500">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">

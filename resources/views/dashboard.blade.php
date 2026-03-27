@@ -28,8 +28,8 @@
 
             <div class="mx-auto mt-8 max-w-2xl space-y-8" id="skills-onboarding-root">
                 <div>
-                    <h4 class="text-2xl font-semibold text-gray-900">Habilidades que puedo ensenar:</h4>
-                    <p class="mt-1 text-sm text-gray-600">Busca y selecciona las habilidades que puedes ensenar a otros.</p>
+                    <h4 class="text-2xl font-semibold text-gray-900">Habilidades que puedo enseñar:</h4>
+                    <p class="mt-1 text-sm text-gray-600">Busca y selecciona 3 habilidades que puedes enseñar a otros.</p>
                     <div class="relative mt-3">
                         <input id="teach-onboarding-input" type="text" class="block w-full rounded-full border-gray-300 bg-gray-200 px-5 py-3 text-base" placeholder="E.J: Python, UI Design, Etc.">
                         <div id="teach-onboarding-options" class="absolute left-0 top-14 z-20 hidden max-h-56 w-full overflow-y-auto rounded-2xl border border-gray-200 bg-white p-1 shadow-lg"></div>
@@ -39,7 +39,7 @@
 
                 <div>
                     <h4 class="text-2xl font-semibold text-gray-900">Habilidades que quiero aprender:</h4>
-                    <p class="mt-1 text-sm text-gray-600">Busca y selecciona las habilidades que quieres aprender de otros.</p>
+                    <p class="mt-1 text-sm text-gray-600">Busca y selecciona 2 intereses que quieres aprender de otros.</p>
                     <div class="relative mt-3">
                         <input id="learn-onboarding-input" type="text" class="block w-full rounded-full border-gray-300 bg-gray-200 px-5 py-3 text-base" placeholder="E.J: Marketing, Desarrollo Web, Idioma Ingles, Etc.">
                         <div id="learn-onboarding-options" class="absolute left-0 top-14 z-20 hidden max-h-56 w-full overflow-y-auto rounded-2xl border border-gray-200 bg-white p-1 shadow-lg"></div>
@@ -65,7 +65,7 @@
     >
         <div class="w-full max-w-5xl rounded-3xl bg-white p-8 shadow-2xl sm:p-10">
             <h3 id="availability-onboarding-title" class="text-center text-2xl font-bold text-gray-900">REGISTRO DE LA DISPONIBILIDAD DE HORARIO</h3>
-            <p class="mt-2 text-center text-gray-700">Indica los dias y horas disponibles para ensenar o aprender.</p>
+            <p class="mt-2 text-center text-gray-700">Indica los dias y horas disponibles para enseñar o aprender.</p>
             <p class="mt-1 text-center text-sm text-gray-500">Esta informacion se puede modificar en cualquier momento en configuracion.</p>
 
             <div id="availability-grid" class="mx-auto mt-7 grid max-w-3xl grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5"></div>
@@ -278,7 +278,7 @@
                 listId: 'teach-onboarding-list',
                 selectedSet: selectedSkillIds.teach,
                 blockedSetResolver: () => selectedSkillIds.learn,
-                emptyText: 'No has agregado habilidades para ensenar.',
+                emptyText: 'No has agregado habilidades para enseñar.',
             });
 
             learnSelector = createSkillSelector({
@@ -302,6 +302,15 @@
             if (skillsSave) {
                 skillsSave.addEventListener('click', async () => {
                     skillsError.classList.add('hidden');
+
+                    const teachCount = teachSelector?.selectedSet.size ?? 0;
+                    const learnCount = learnSelector?.selectedSet.size ?? 0;
+
+                    if (teachCount !== 3 || learnCount !== 2) {
+                        skillsError.textContent = 'Debes seleccionar exactamente 3 habilidades para enseñar y 2 intereses para aprender.';
+                        skillsError.classList.remove('hidden');
+                        return;
+                    }
 
                     try {
                         await postJson('{{ route('onboarding.skills.store') }}', {

@@ -16,11 +16,23 @@ class UserSetupController extends Controller
     public function storeSkills(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'teach_skill_ids' => ['required', 'array', 'min:1'],
+            'teach_skill_ids' => ['required', 'array', 'size:3'],
             'teach_skill_ids.*' => ['integer', 'distinct', Rule::exists('skills', 'id')],
-            'learn_skill_ids' => ['required', 'array', 'min:1'],
+            'learn_skill_ids' => ['required', 'array', 'size:2'],
             'learn_skill_ids.*' => ['integer', 'distinct', Rule::exists('skills', 'id')],
         ]);
+
+        if (count(array_unique($validated['teach_skill_ids'])) !== 3) {
+            return response()->json([
+                'message' => 'Debes seleccionar exactamente 3 habilidades para ensenar.',
+            ], 422);
+        }
+
+        if (count(array_unique($validated['learn_skill_ids'])) !== 2) {
+            return response()->json([
+                'message' => 'Debes seleccionar exactamente 2 intereses para aprender.',
+            ], 422);
+        }
 
         $teachIds = collect($validated['teach_skill_ids'])->map(fn ($id) => (int) $id)->unique()->values();
         $learnIds = collect($validated['learn_skill_ids'])
