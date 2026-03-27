@@ -1,6 +1,8 @@
 {
     "Profile": "Perfil",
     "Profile Information": "Información del perfil",
+    "Account Configuration": "Configuración de la cuenta",
+    "View Profile": "Ver perfil",
     "Update your account's profile information and email address.": "Actualiza la información de perfil y el correo de tu cuenta.",
     "Name": "Nombre",
     "Email": "Correo electrónico",

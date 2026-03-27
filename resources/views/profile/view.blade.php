@@ -1,4 +1,9 @@
 <x-app-layout>
+  <x-slot name="header">
+        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+            {{ __('View Profile') }}
+        </h2>
+    </x-slot>
     @php
         $profilePhotoUrl = $user->profile_photo_path ? asset('storage/' . $user->profile_photo_path) : null;
         $age = $user->birth_date?->age;
@@ -16,14 +21,14 @@
 
     <div class="py-8 px-4 sm:px-6">
         <div class="mx-auto max-w-4xl">
-            <a href="{{ route('dashboard') }}" class="inline-flex items-center text-gray-800 font-semibold text-base mb-5 hover:text-gray-600 transition">
-                <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
-                </svg>
-                Regresar
-            </a>
-
-            <div class="bg-white rounded-3xl shadow-md p-5 sm:p-8">
+          
+          <div class="bg-white rounded-3xl shadow-md p-5 sm:p-8">
+              <a href="{{ route('dashboard') }}" class="inline-flex items-center text-gray-800 font-semibold text-base mb-5 hover:text-gray-600 transition">
+                  <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                  </svg>
+                  Regresar
+              </a>
                 <div class="flex flex-col md:flex-row md:items-start gap-6">
                     <div class="flex-shrink-0">
                         @if ($profilePhotoUrl)
