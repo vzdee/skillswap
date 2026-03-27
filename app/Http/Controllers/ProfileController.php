@@ -3,11 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ProfileUpdateRequest;
+use App\Models\Skill;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Redirect;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
@@ -18,8 +20,39 @@ class ProfileController extends Controller
      */
     public function edit(Request $request): View
     {
+        $user = $request->user();
+        $hasSkillsSchema = Schema::hasTable('skills') && Schema::hasTable('user_skill');
+        $hasAvailabilitySchema = Schema::hasTable('user_availabilities');
+
+        $relationsToLoad = [];
+
+        if ($hasSkillsSchema) {
+            $relationsToLoad[] = 'taughtSkills:id,name';
+            $relationsToLoad[] = 'learningSkills:id,name';
+        }
+
+        if ($hasAvailabilitySchema) {
+            $relationsToLoad[] = 'availabilities:id,user_id,weekday,time_block';
+        }
+
+        if (count($relationsToLoad) > 0) {
+            $user->load($relationsToLoad);
+        }
+
+        $taughtSkills = $hasSkillsSchema ? $user->taughtSkills : collect();
+        $learningSkills = $hasSkillsSchema ? $user->learningSkills : collect();
+        $availabilities = $hasAvailabilitySchema ? $user->availabilities : collect();
+
         return view('profile.edit', [
-            'user' => $request->user(),
+            'user' => $user,
+            'skillsCatalog' => $hasSkillsSchema
+                ? Skill::query()->orderBy('name')->get(['id', 'name'])
+                : collect(),
+            'availabilityDays' => UserSetupController::availabilityDays(),
+            'availabilityBlocks' => UserSetupController::availabilityBlocks(),
+            'taughtSkills' => $taughtSkills,
+            'learningSkills' => $learningSkills,
+            'availabilities' => $availabilities,
         ]);
     }
 
