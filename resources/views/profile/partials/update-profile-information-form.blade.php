@@ -27,17 +27,21 @@
 
         <div class="flex flex-col gap-4 rounded-lg border border-gray-200 p-4 md:flex-row md:items-center md:justify-between">
             <div class="flex items-center gap-4">
-                @if ($profilePhotoUrl)
+                <div class="h-24 w-24">
                     <img
-                        src="{{ $profilePhotoUrl }}"
+                        id="profile_photo_current"
+                        src="{{ $profilePhotoUrl ?? '' }}"
                         alt="Foto de perfil de {{ $user->name }}"
-                        class="h-24 w-24 rounded-full object-cover border border-gray-200"
+                        class="h-24 w-24 rounded-full object-cover border border-gray-200 {{ $profilePhotoUrl ? '' : 'hidden' }}"
                     >
-                @else
-                    <div class="h-20 w-20 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-2xl font-semibold border border-blue-200">
+
+                    <div
+                        id="profile_photo_placeholder"
+                        class="h-24 w-24 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-2xl font-semibold border border-blue-200 {{ $profilePhotoUrl ? 'hidden' : '' }}"
+                    >
                         {{ strtoupper(substr($user->name, 0, 1)) }}
                     </div>
-                @endif
+                </div>
             </div>
 
             <div class="w-full md:max-w-sm">
@@ -58,18 +62,9 @@
                 </button>
                 <input id="remove_profile_photo" type="hidden" name="remove_profile_photo" value="0">
                 <p class="mt-1 text-xs text-gray-500">Formatos permitidos: .png, .jpg. Tamaño máximo: 2MB.</p>
+                <p id="profile_photo_name" class="mt-2 text-xs text-gray-600"></p>
                 <x-input-error class="mt-2" :messages="$errors->get('profile_photo')" />
                 <p id="profile_photo_error" class="mt-2 text-sm text-red-600 hidden"></p>
-
-                <div id="profile_photo_preview_wrapper" class="mt-3 hidden">
-                    <img
-                        id="profile_photo_preview"
-                        src=""
-                        alt="Vista previa de nueva foto de perfil"
-                        class="h-24 w-24 rounded-full object-cover border border-gray-300"
-                    >
-                    <p id="profile_photo_name" class="mt-2 text-xs text-gray-600"></p>
-                </div>
 
                 @if ($profilePhotoUrl)
                     <div class="mt-3">
@@ -205,19 +200,21 @@
             const nameError = document.getElementById('profile-name-error');
             const birthDateError = document.getElementById('profile-birth-date-error');
             const careerError = document.getElementById('profile-career-error');
-            const previewWrapper = document.getElementById('profile_photo_preview_wrapper');
-            const previewImage = document.getElementById('profile_photo_preview');
+            const currentPhoto = document.getElementById('profile_photo_current');
+            const photoPlaceholder = document.getElementById('profile_photo_placeholder');
             const previewName = document.getElementById('profile_photo_name');
             const submitButton = document.getElementById('profile-update-submit');
             const success = document.getElementById('profile-update-success');
 
-            if (!form || !input || !photoTrigger || !removePhotoInput || !error || !nameError || !birthDateError || !careerError || !previewWrapper || !previewImage || !previewName || !submitButton || !success) {
+            if (!form || !input || !photoTrigger || !removePhotoInput || !error || !nameError || !birthDateError || !careerError || !currentPhoto || !photoPlaceholder || !previewName || !submitButton || !success) {
                 return;
             }
 
             const maxBytes = 2 * 1024 * 1024;
             const allowedTypes = ['image/png', 'image/jpeg'];
             const allowedExtensions = ['png', 'jpg', 'jpeg'];
+            let currentSavedPhotoUrl = '{{ $profilePhotoUrl ?? '' }}';
+            let currentPreviewObjectUrl = null;
 
             const getExtension = (filename) => filename.split('.').pop().toLowerCase();
 
@@ -250,17 +247,42 @@
                 }
             };
 
+            const clearPreviewObjectUrl = () => {
+                if (currentPreviewObjectUrl) {
+                    URL.revokeObjectURL(currentPreviewObjectUrl);
+                    currentPreviewObjectUrl = null;
+                }
+            };
+
+            const showPlaceholder = () => {
+                currentPhoto.src = '';
+                currentPhoto.classList.add('hidden');
+                photoPlaceholder.classList.remove('hidden');
+            };
+
+            const showPhoto = (src) => {
+                currentPhoto.src = src;
+                currentPhoto.classList.remove('hidden');
+                photoPlaceholder.classList.add('hidden');
+            };
+
             const resetPreview = () => {
-                previewImage.src = '';
+                clearPreviewObjectUrl();
                 previewName.textContent = '';
-                previewWrapper.classList.add('hidden');
+
+                if (currentSavedPhotoUrl) {
+                    showPhoto(currentSavedPhotoUrl);
+                    return;
+                }
+
+                showPlaceholder();
             };
 
             const updatePreview = (file) => {
-                const objectUrl = URL.createObjectURL(file);
-                previewImage.src = objectUrl;
+                clearPreviewObjectUrl();
+                currentPreviewObjectUrl = URL.createObjectURL(file);
+                showPhoto(currentPreviewObjectUrl);
                 previewName.textContent = file.name;
-                previewWrapper.classList.remove('hidden');
             };
 
             photoTrigger.addEventListener('click', () => {
@@ -359,6 +381,17 @@
                         }
 
                         if (Object.prototype.hasOwnProperty.call(user, 'profile_photo_url')) {
+                            currentSavedPhotoUrl = user.profile_photo_url || '';
+
+                            if (currentSavedPhotoUrl) {
+                                showPhoto(currentSavedPhotoUrl);
+                            } else {
+                                showPlaceholder();
+                            }
+
+                            clearPreviewObjectUrl();
+                            previewName.textContent = '';
+
                             document.querySelectorAll('[data-profile-avatar]').forEach((node) => {
                                 if (node.tagName === 'IMG') {
                                     if (user.profile_photo_url) {
@@ -415,6 +448,7 @@
 
                 confirmRemovePhotoButton.addEventListener('click', () => {
                     removePhotoInput.value = '1';
+                    currentSavedPhotoUrl = '';
                     input.value = '';
                     resetPreview();
                     closeRemovePhotoModal();
