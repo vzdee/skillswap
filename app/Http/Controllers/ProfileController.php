@@ -127,9 +127,33 @@ class ProfileController extends Controller
         return Redirect::to('/');
     }
 
-    public function view(Request $request): View{
+    public function view(Request $request): View
+    {
+        $user = $request->user();
+        $hasSkillsSchema = Schema::hasTable('skills') && Schema::hasTable('user_skill');
+        $hasAvailabilitySchema = Schema::hasTable('user_availabilities');
+
+        $relationsToLoad = [];
+
+        if ($hasSkillsSchema) {
+            $relationsToLoad[] = 'taughtSkills:id,name';
+            $relationsToLoad[] = 'learningSkills:id,name';
+        }
+
+        if ($hasAvailabilitySchema) {
+            $relationsToLoad[] = 'availabilities:id,user_id,weekday,time_block';
+        }
+
+        if (count($relationsToLoad) > 0) {
+            $user->load($relationsToLoad);
+        }
+
         return view('profile.view', [
-            'user' => $request->user(),
+            'user' => $user,
+            'taughtSkills' => $hasSkillsSchema ? $user->taughtSkills : collect(),
+            'learningSkills' => $hasSkillsSchema ? $user->learningSkills : collect(),
+            'availabilities' => $hasAvailabilitySchema ? $user->availabilities : collect(),
+            'availabilityDays' => UserSetupController::availabilityDays(),
         ]);
     }
 }
