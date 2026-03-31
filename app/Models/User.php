@@ -69,4 +69,29 @@ class User extends Authenticatable
     {
         return $this->hasMany(UserAvailability::class);
     }
+
+    public function sentMatchRequests(): HasMany
+    {
+        return $this->hasMany(MatchRequest::class, 'from_user_id');
+    }
+
+    public function receivedMatchRequests(): HasMany
+    {
+        return $this->hasMany(MatchRequest::class, 'to_user_id');
+    }
+
+    public function chatsAsUserOne(): HasMany
+    {
+        return $this->hasMany(Chat::class, 'user_one_id');
+    }
+
+    public function chatsAsUserTwo(): HasMany
+    {
+        return $this->hasMany(Chat::class, 'user_two_id');
+    }
+
+    public function chatMessages(): HasMany
+    {
+        return $this->hasMany(ChatMessage::class);
+    }
 }

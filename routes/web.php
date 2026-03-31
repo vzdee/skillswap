@@ -3,6 +3,7 @@
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\MatchRequestController;
 use App\Http\Controllers\UserSetupController;
 use Illuminate\Support\Facades\Route;
 
@@ -18,6 +19,18 @@ Route::get('/dashboard/chat', [ChatController::class, 'Chat'])
     ->middleware(['auth', 'verified'])
     ->name('dashboard.chat');
 
+Route::get('/dashboard/chat/{chat}/messages', [ChatController::class, 'messages'])
+    ->middleware(['auth', 'verified'])
+    ->name('dashboard.chat.messages.index');
+
+Route::post('/dashboard/chat/{chat}/messages', [ChatController::class, 'storeMessage'])
+    ->middleware(['auth', 'verified'])
+    ->name('dashboard.chat.messages.store');
+
+Route::delete('/dashboard/chat/messages/{chatMessage}', [ChatController::class, 'destroyMessage'])
+    ->middleware(['auth', 'verified'])
+    ->name('dashboard.chat.messages.destroy');
+
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
@@ -31,6 +44,9 @@ Route::middleware('auth')->group(function () {
     Route::post('/profile/skills/remove', [UserSetupController::class, 'removeSkill'])->name('profile.skills.remove');
     Route::post('/profile/availability/add', [UserSetupController::class, 'addAvailability'])->name('profile.availability.add');
     Route::post('/profile/availability/remove', [UserSetupController::class, 'removeAvailability'])->name('profile.availability.remove');
+
+    Route::post('/matches/request', [MatchRequestController::class, 'store'])->name('matches.request.store');
+    Route::post('/matches/request/{matchRequest}/respond', [MatchRequestController::class, 'respond'])->name('matches.request.respond');
 });
 
 require __DIR__.'/auth.php';

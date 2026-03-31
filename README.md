@@ -41,6 +41,51 @@ php artisan boost:install
 
 Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
 
+## Real-Time Chat (WebSockets)
+
+This project uses Laravel Reverb + Echo for real-time chat updates.
+
+1. Install dependencies:
+
+```bash
+composer install
+npm install
+```
+
+2. Ensure environment has broadcasting enabled:
+
+```env
+BROADCAST_CONNECTION=reverb
+REVERB_APP_ID=...
+REVERB_APP_KEY=...
+REVERB_APP_SECRET=...
+REVERB_HOST=127.0.0.1
+REVERB_PORT=8080
+REVERB_SCHEME=http
+
+VITE_REVERB_APP_KEY="${REVERB_APP_KEY}"
+VITE_REVERB_HOST=
+VITE_REVERB_PORT="${REVERB_PORT}"
+VITE_REVERB_SCHEME="${REVERB_SCHEME}"
+```
+
+3. Start development services (includes Reverb):
+
+```bash
+composer run dev
+```
+
+## Herd Share / Public Link
+
+When sharing the app URL, set these values in .env with your shared URL:
+
+```env
+APP_URL=https://your-share-url
+ASSET_URL=${APP_URL}
+```
+
+ASSET_URL ensures CSS, JS, images, and storage asset URLs are generated with the shared domain.
+
 ## Contributing
 
 Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
