@@ -54,7 +54,7 @@
                 @endforeach
             </div>
 
-            <div class="mt-3 grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
+            <div class="mt-3 grid gap-2 sm:grid-cols-[1fr_1fr_auto]"> 
                 <select id="availability-day" class="rounded-2xl border-gray-300 text-sm">
                     <option value="">Dia</option>
                     @foreach ($availabilityDays as $dayKey => $dayLabel)

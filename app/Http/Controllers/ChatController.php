@@ -5,11 +5,13 @@ namespace App\Http\Controllers;
 use App\Events\ChatMessageSent;
 use App\Models\Chat;
 use App\Models\ChatMessage;
+use App\Models\User;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Storage;
 use Throwable;
 
 class ChatController extends Controller
@@ -62,6 +64,8 @@ class ChatController extends Controller
         $activePartner = null;
 
         if ($activeChat) {
+            $this->markIncomingMessagesAsRead($activeChat, (int) $authUser->id);
+
             $activePartner = (int) $activeChat->user_one_id === (int) $authUser->id
                 ? $activeChat->userTwo
                 : $activeChat->userOne;
@@ -74,6 +78,7 @@ class ChatController extends Controller
                     return [
                         'message' => $message,
                         'isMine' => (int) $message->user_id === (int) $authUser->id,
+                        'isRead' => $message->read_at !== null,
                         'photoUrl' => $this->photoUrl($message->user->profile_photo_path),
                     ];
                 });
@@ -94,13 +99,39 @@ class ChatController extends Controller
         $this->ensureParticipant($chat, (int) $user->id);
 
         $validated = $request->validate([
-            'body' => ['required', 'string', 'max:2000'],
+            'body' => ['nullable', 'string', 'max:2000'],
+            'attachment' => ['nullable', 'file', 'max:2048'],
         ]);
 
-        $message = $chat->messages()->create([
+        $body = trim((string) ($validated['body'] ?? ''));
+        $attachment = $request->file('attachment');
+
+        if ($body === '' && !$attachment) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'ok' => false,
+                    'message' => 'Escribe un mensaje o adjunta un archivo.',
+                ], 422);
+            }
+
+            return redirect()
+                ->route('dashboard.chat', ['chat' => $chat->id])
+                ->with('request_error', 'Escribe un mensaje o adjunta un archivo.');
+        }
+
+        $messageData = [
             'user_id' => $user->id,
-            'body' => trim($validated['body']),
-        ]);
+            'body' => $body,
+        ];
+
+        if ($attachment) {
+            $messageData['attachment_path'] = $attachment->store('chat-attachments', 'local');
+            $messageData['attachment_name'] = $attachment->getClientOriginalName();
+            $messageData['attachment_mime'] = $attachment->getClientMimeType();
+            $messageData['attachment_size'] = $attachment->getSize();
+        }
+
+        $message = $chat->messages()->create($messageData);
 
         $message->load('user:id,name,profile_photo_path');
         $item = $this->serializeMessage($message, $user->id);
@@ -135,6 +166,11 @@ class ChatController extends Controller
 
         $chatId = $chatMessage->chat_id;
         $messageId = (int) $chatMessage->id;
+
+        if ($chatMessage->attachment_path && Storage::disk('local')->exists($chatMessage->attachment_path)) {
+            Storage::disk('local')->delete($chatMessage->attachment_path);
+        }
+
         $chatMessage->delete();
 
         if ($request->expectsJson()) {
@@ -153,6 +189,7 @@ class ChatController extends Controller
     {
         $user = $request->user();
         $this->ensureParticipant($chat, (int) $user->id);
+        $this->markIncomingMessagesAsRead($chat, (int) $user->id);
 
         $validated = $request->validate([
             'after_id' => ['nullable', 'integer', 'min:0'],
@@ -168,11 +205,34 @@ class ChatController extends Controller
             ->map(fn (ChatMessage $message) => $this->serializeMessage($message, (int) $user->id))
             ->values();
 
+        $readReceipts = $chat->messages()
+            ->where('user_id', $user->id)
+            ->whereNotNull('read_at')
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->values();
+
         return response()->json([
             'ok' => true,
             'chat_id' => (int) $chat->id,
             'items' => $messages,
+            'read_receipts' => $readReceipts,
         ]);
+    }
+
+    public function downloadAttachment(Request $request, ChatMessage $chatMessage)
+    {
+        $chat = $chatMessage->chat;
+        $this->ensureParticipant($chat, (int) $request->user()->id);
+
+        if (!$chatMessage->attachment_path || !Storage::disk('local')->exists($chatMessage->attachment_path)) {
+            abort(404);
+        }
+
+        return response()->download(
+            Storage::disk('local')->path($chatMessage->attachment_path),
+            $chatMessage->attachment_name ?: 'archivo'
+        );
     }
 
     private function ensureParticipant(Chat $chat, int $userId): void
@@ -202,15 +262,25 @@ class ChatController extends Controller
 
     private function photoUrl(?string $path): ?string
     {
-        if (!$path) {
-            return null;
-        }
+        return User::buildProfilePhotoUrl($path);
+    }
 
-        return asset('storage/' . str_replace('\\', '/', $path));
+    private function markIncomingMessagesAsRead(Chat $chat, int $authUserId): void
+    {
+        $chat->messages()
+            ->where('user_id', '!=', $authUserId)
+            ->whereNull('read_at')
+            ->update(['read_at' => now()]);
     }
 
     private function serializeMessage(ChatMessage $message, int $authUserId): array
     {
+        $attachmentName = $message->attachment_name;
+        $attachmentUrl = $message->attachment_path
+            ? route('dashboard.chat.messages.attachment', $message)
+            : null;
+        $attachmentMime = $message->attachment_mime;
+
         return [
             'id' => (int) $message->id,
             'user_id' => (int) $message->user_id,
@@ -219,6 +289,11 @@ class ChatController extends Controller
             'body' => $message->body,
             'created_at_time' => $message->created_at->format('g:i a'),
             'is_mine' => (int) $message->user_id === $authUserId,
+            'is_read' => $message->read_at !== null,
+            'attachment_name' => $attachmentName,
+            'attachment_url' => $attachmentUrl,
+            'attachment_mime' => $attachmentMime,
+            'attachment_is_image' => $attachmentMime ? str_starts_with($attachmentMime, 'image/') : false,
         ];
     }
 }

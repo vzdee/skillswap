@@ -5,7 +5,7 @@
         </h2>
     </x-slot>
     @php
-        $profilePhotoUrl = $user->profile_photo_path ? asset('storage/' . $user->profile_photo_path) : null;
+        $profilePhotoUrl = $user->profile_photo_url;
         $age = $user->birth_date?->age;
         $careerLabels = [
             'ingenieria_biomedica' => 'Ingenieria Biomedica',

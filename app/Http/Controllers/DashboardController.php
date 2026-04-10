@@ -252,11 +252,7 @@ class DashboardController extends Controller
 
     private function profilePhotoUrl(?string $path): ?string
     {
-        if (!$path) {
-            return null;
-        }
-
-        return asset('storage/' . str_replace('\\', '/', $path));
+        return User::buildProfilePhotoUrl($path);
     }
 
     private function careerLabel(?string $career): ?string

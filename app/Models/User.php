@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Str;
 
 #[Fillable([
     'name',
@@ -93,5 +94,33 @@ class User extends Authenticatable
     public function chatMessages(): HasMany
     {
         return $this->hasMany(ChatMessage::class);
+    }
+
+    public function getProfilePhotoUrlAttribute(): ?string
+    {
+        return self::buildProfilePhotoUrl($this->profile_photo_path);
+    }
+
+    public static function buildProfilePhotoUrl(?string $path): ?string
+    {
+        if (!$path) {
+            return null;
+        }
+
+        $normalized = str_replace('\\', '/', $path);
+
+        if (Str::startsWith($normalized, ['http://', 'https://', 'data:'])) {
+            return $normalized;
+        }
+
+        if (Str::startsWith($normalized, '/storage/')) {
+            return $normalized;
+        }
+
+        if (Str::startsWith($normalized, 'storage/')) {
+            return '/' . ltrim($normalized, '/');
+        }
+
+        return '/storage/' . ltrim($normalized, '/');
     }
 }

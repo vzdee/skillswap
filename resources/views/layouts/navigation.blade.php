@@ -2,9 +2,7 @@
     @php
         $authUser = \App\Models\User::query()->findOrFail(Auth::id());
 
-        $profilePhotoUrl = $authUser->profile_photo_path
-            ? asset('storage/' . $authUser->profile_photo_path)
-            : null;
+        $profilePhotoUrl = $authUser->profile_photo_url;
     @endphp
 
     <!-- Primary Navigation Menu -->

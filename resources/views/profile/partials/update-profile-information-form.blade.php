@@ -7,7 +7,7 @@
 </a>
 <section>
     @php
-        $profilePhotoUrl = $user->profile_photo_path ? asset('storage/' . $user->profile_photo_path) : null;
+        $profilePhotoUrl = $user->profile_photo_url;
     @endphp
 
     <header>

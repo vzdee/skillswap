@@ -81,8 +81,29 @@
                                                     <div class="mb-1 flex items-center gap-3">
                                                         <p class="text-xs font-black {{ $item['isMine'] ? 'text-blue-100' : 'text-gray-900' }}">{{ $item['message']->user->name }}</p>
                                                         <p class="text-[11px] {{ $item['isMine'] ? 'text-blue-100' : 'text-gray-500' }}">{{ $item['message']->created_at->format('g:i a') }}</p>
+                                                        @if ($item['isMine'])
+                                                            <span data-message-checks class="text-xs font-black tracking-[-0.2em] {{ ($item['isRead'] ?? false) ? 'text-white' : 'text-black' }}">✓✓</span>
+                                                        @endif
                                                     </div>
-                                                    <p class="text-sm leading-snug">{{ $item['message']->body }}</p>
+
+                                                    @if ($item['message']->attachment_path)
+                                                        @php
+                                                            $isImageAttachment = $item['message']->attachment_mime && str_starts_with($item['message']->attachment_mime, 'image/');
+                                                        @endphp
+                                                        @if ($isImageAttachment)
+                                                            <a href="{{ route('dashboard.chat.messages.attachment', $item['message']) }}" target="_blank" rel="noopener" class="mb-2 block">
+                                                                <img src="{{ route('dashboard.chat.messages.attachment', $item['message']) }}" alt="{{ $item['message']->attachment_name }}" class="max-h-56 w-full rounded-xl object-cover">
+                                                            </a>
+                                                        @else
+                                                            <a href="{{ route('dashboard.chat.messages.attachment', $item['message']) }}" target="_blank" rel="noopener" class="mb-2 inline-flex max-w-full items-center rounded-lg border border-white/30 bg-white/10 px-3 py-2 text-xs font-semibold underline-offset-2 hover:underline">
+                                                                📎 {{ $item['message']->attachment_name }}
+                                                            </a>
+                                                        @endif
+                                                    @endif
+
+                                                    @if ($item['message']->body !== '')
+                                                        <p class="text-sm leading-snug">{{ $item['message']->body }}</p>
+                                                    @endif
                                                 </div>
                                             </div>
                                         </div>
@@ -93,28 +114,30 @@
                             </div>
 
                             <div class="shrink-0 border-t border-gray-300/80 bg-[#b9bec8]/95 p-3 sm:p-4">
-                                <form id="chat-send-form" method="POST" action="{{ route('dashboard.chat.messages.store', $activeChat) }}" class="flex items-center gap-3 rounded-md bg-[#212735] px-4 py-3">
+                                <form id="chat-send-form" method="POST" action="{{ route('dashboard.chat.messages.store', $activeChat) }}" enctype="multipart/form-data" class="flex items-center gap-3 rounded-md bg-[#212735] px-4 py-3">
                                     @csrf
-                                    <span class="text-gray-300" aria-hidden="true">
+                                    <input id="chat-attachment-input" type="file" name="attachment" accept="image/*,.pdf,.doc,.docx,.txt,.zip,.rar" class="hidden">
+                                    <button id="chat-attachment-trigger" type="button" class="text-gray-300 transition hover:text-white" aria-label="Adjuntar archivo">
                                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="h-5 w-5">
                                             <path d="M16.5 6.75a4.5 4.5 0 0 0-6.364 0L4.72 12.167a3 3 0 0 0 4.243 4.243l4.95-4.95a1.5 1.5 0 0 0-2.122-2.121l-4.066 4.066a.75.75 0 0 0 1.06 1.061l3.36-3.36a.75.75 0 1 1 1.06 1.06l-3.358 3.36a2.25 2.25 0 1 1-3.182-3.182l4.95-4.95a3 3 0 1 1 4.243 4.243l-5.657 5.657a5.25 5.25 0 0 1-7.425-7.425l5.657-5.657a6 6 0 1 1 8.486 8.485l-4.243 4.243a.75.75 0 1 1-1.06-1.06l4.242-4.244a4.5 4.5 0 0 0 0-6.364Z" />
                                         </svg>
-                                    </span>
+                                    </button>
                                     <input
                                         id="chat-message-input"
                                         type="text"
                                         name="body"
                                         maxlength="2000"
-                                        required
                                         placeholder="Escribe tu mensaje"
                                         class="w-full border-none bg-transparent text-sm text-white placeholder:text-gray-400 focus:ring-0"
                                     >
-                                    <button type="submit" class="rounded-full bg-blue-500 p-2 text-white transition hover:bg-blue-600" aria-label="Enviar mensaje">
+                                    <button id="chat-send-submit" type="submit" class="rounded-full bg-blue-500 p-2 text-white transition hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-60" aria-label="Enviar mensaje">
                                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="h-5 w-5">
                                             <path d="M3.4 20.8a.75.75 0 0 1-.95-.95l2.37-7.11a.75.75 0 0 0 0-.48L2.45 5.15a.75.75 0 0 1 .95-.95l17.3 5.77a.75.75 0 0 1 0 1.42L3.4 20.8Zm3.02-8.8-.92 2.75 9.76-3.25-9.76-3.25.92 2.75h6.83a.75.75 0 0 1 0 1.5H6.42Z" />
                                         </svg>
                                     </button>
                                 </form>
+                                <p id="chat-attachment-name" class="mt-2 text-xs font-semibold text-gray-700"></p>
+                                <p id="chat-send-error" class="mt-1 hidden text-xs font-semibold text-red-600"></p>
                             </div>
                         @endif
                     </section>
@@ -130,6 +153,7 @@
 
     <script>
         (() => {
+            const MAX_ATTACHMENT_BYTES = 2 * 1024 * 1024;
             const csrfToken = '{{ csrf_token() }}';
             const authUserId = {{ (int) auth()->id() }};
             const menu = document.getElementById('chat-message-menu');
@@ -138,16 +162,24 @@
             const messagesList = document.getElementById('chat-messages-list');
             const sendForm = document.getElementById('chat-send-form');
             const messageInput = document.getElementById('chat-message-input');
+            const sendButton = document.getElementById('chat-send-submit');
+            const attachmentInput = document.getElementById('chat-attachment-input');
+            const attachmentTrigger = document.getElementById('chat-attachment-trigger');
+            const attachmentName = document.getElementById('chat-attachment-name');
+            const sendError = document.getElementById('chat-send-error');
             const activeChatId = Number.parseInt(messagesList?.dataset.activeChatId || '0', 10);
             const hasEcho = Boolean(window.Echo && activeChatId > 0);
 
-            if (!menu || !copyButton || !deleteButton || !messagesList) {
+            if (!menu || !copyButton || !deleteButton || !messagesList || !sendForm) {
                 return;
             }
 
+            let isSending = false;
             let currentText = '';
             let currentDeleteUrl = '';
             let currentMessageId = 0;
+            let failedCounter = 0;
+            const failedPayloads = new Map();
             let lastMessageId = Array.from(messagesList.querySelectorAll('[data-message-id]'))
                 .reduce((maxValue, node) => Math.max(maxValue, Number.parseInt(node.dataset.messageId || '0', 10) || 0), 0);
 
@@ -175,16 +207,75 @@
                 return element.value;
             };
 
+            const showSendError = (message) => {
+                if (!sendError) {
+                    return;
+                }
+
+                sendError.textContent = message;
+                sendError.classList.remove('hidden');
+            };
+
+            const clearSendError = () => {
+                if (!sendError) {
+                    return;
+                }
+
+                sendError.textContent = '';
+                sendError.classList.add('hidden');
+            };
+
+            const updateAttachmentLabel = (file) => {
+                if (!attachmentName) {
+                    return;
+                }
+
+                attachmentName.textContent = file ? `Adjunto: ${file.name}` : '';
+            };
+
+            const setSendingState = (value) => {
+                isSending = value;
+
+                if (sendButton) {
+                    sendButton.disabled = value;
+                }
+
+                if (attachmentTrigger) {
+                    attachmentTrigger.disabled = value;
+                }
+            };
+
+            const messageContentHtml = (item) => {
+                const hasBody = String(item.body || '').trim() !== '';
+                const hasAttachment = Boolean(item.attachment_url && item.attachment_name);
+
+                const attachmentHtml = hasAttachment
+                    ? item.attachment_is_image
+                        ? `<a href="${item.attachment_url}" target="_blank" rel="noopener" class="mb-2 block"><img src="${item.attachment_url}" alt="${escapeHtml(item.attachment_name)}" class="max-h-56 w-full rounded-xl object-cover"></a>`
+                        : `<a href="${item.attachment_url}" target="_blank" rel="noopener" class="mb-2 inline-flex max-w-full items-center rounded-lg border border-white/30 bg-white/10 px-3 py-2 text-xs font-semibold underline-offset-2 hover:underline">📎 ${escapeHtml(item.attachment_name)}</a>`
+                    : '';
+
+                const bodyHtml = hasBody ? `<p class="text-sm leading-snug">${escapeHtml(item.body)}</p>` : '';
+
+                return `${attachmentHtml}${bodyHtml}`;
+            };
+
+            const readChecksClass = (isRead) => (isRead ? 'text-white' : 'text-black');
+
             const renderMessageNode = (item) => {
                 const wrapper = document.createElement('div');
                 wrapper.className = item.is_mine ? 'flex justify-end' : 'flex justify-start';
                 wrapper.dataset.chatItem = String(item.id);
 
+                const checksHtml = item.is_mine
+                    ? `<span data-message-checks class="text-xs font-black tracking-[-0.2em] ${readChecksClass(Boolean(item.is_read))}">✓✓</span>`
+                    : '';
+
                 const messageHtml = `
                     <div
                         data-chat-message
                         data-message-id="${item.id}"
-                        data-message-text="${escapeHtml(item.body)}"
+                        data-message-text="${escapeHtml(item.body || '')}"
                         data-mine="${item.is_mine ? '1' : '0'}"
                         data-delete-url="${item.is_mine ? `{{ route('dashboard.chat.messages.destroy', '__id__') }}`.replace('__id__', item.id) : ''}"
                         class="group relative max-w-[80%]"
@@ -195,8 +286,9 @@
                                 <div class="mb-1 flex items-center gap-3">
                                     <p class="text-xs font-black ${item.is_mine ? 'text-blue-100' : 'text-gray-900'}">${escapeHtml(item.user_name)}</p>
                                     <p class="text-[11px] ${item.is_mine ? 'text-blue-100' : 'text-gray-500'}">${item.created_at_time}</p>
+                                    ${checksHtml}
                                 </div>
-                                <p class="text-sm leading-snug">${escapeHtml(item.body)}</p>
+                                ${messageContentHtml(item)}
                             </div>
                         </div>
                     </div>
@@ -229,6 +321,22 @@
                 messagesList.scrollTop = messagesList.scrollHeight;
             };
 
+            const updateReadReceipts = (ids) => {
+                if (!Array.isArray(ids) || ids.length === 0) {
+                    return;
+                }
+
+                ids.forEach((id) => {
+                    const checks = messagesList.querySelector(`[data-chat-item="${id}"] [data-message-checks]`);
+                    if (!checks) {
+                        return;
+                    }
+
+                    checks.classList.remove('text-black');
+                    checks.classList.add('text-white');
+                });
+            };
+
             const scrollToLatest = () => {
                 messagesList.scrollTop = messagesList.scrollHeight;
             };
@@ -247,6 +355,105 @@
                 return {
                     'X-Socket-Id': socketId,
                 };
+            };
+
+            const createFailedMessageNode = (failedId, payload, reason) => {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'flex justify-end';
+                wrapper.dataset.failedItem = failedId;
+
+                const fileHtml = payload.file
+                    ? `<p class="mb-2 text-xs font-semibold text-red-700">📎 ${escapeHtml(payload.file.name)}</p>`
+                    : '';
+
+                const bodyHtml = payload.text
+                    ? `<p class="text-sm leading-snug text-red-900">${escapeHtml(payload.text)}</p>`
+                    : '';
+
+                wrapper.innerHTML = `
+                    <div class="max-w-[80%] rounded-3xl border border-red-300 bg-red-100 px-4 py-3">
+                        ${fileHtml}
+                        ${bodyHtml}
+                        <p class="mt-2 text-xs font-semibold text-red-600">
+                            No enviado.
+                            <span data-failed-error>${escapeHtml(reason || '')}</span>
+                            <button type="button" data-retry-failed="${failedId}" class="ml-2 underline">Reintentar</button>
+                        </p>
+                    </div>
+                `;
+
+                messagesList.appendChild(wrapper);
+                scrollToLatest();
+            };
+
+            const sendMessagePayload = async (payload, failedId = null) => {
+                if (isSending) {
+                    return;
+                }
+
+                setSendingState(true);
+                clearSendError();
+
+                try {
+                    const formData = new FormData();
+                    formData.append('_token', csrfToken);
+
+                    if (payload.text) {
+                        formData.append('body', payload.text);
+                    }
+
+                    if (payload.file) {
+                        formData.append('attachment', payload.file);
+                    }
+
+                    const response = await fetch(sendForm.getAttribute('action') || window.location.href, {
+                        method: 'POST',
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest',
+                            ...socketHeaders(),
+                        },
+                        body: formData,
+                    });
+
+                    const data = await response.json();
+                    if (!response.ok || data.ok === false) {
+                        throw new Error(data.message || 'No se pudo enviar el mensaje.');
+                    }
+
+                    if (failedId) {
+                        const failedNode = messagesList.querySelector(`[data-failed-item="${failedId}"]`);
+                        if (failedNode) {
+                            failedNode.remove();
+                        }
+
+                        failedPayloads.delete(failedId);
+                    }
+
+                    appendMessages([data.item]);
+                    updateReadReceipts(data.read_receipts || []);
+
+                    if (messageInput) {
+                        messageInput.focus();
+                    }
+                } catch (error) {
+                    const reason = error?.message || 'No se pudo enviar el mensaje.';
+
+                    if (failedId) {
+                        const failedNode = messagesList.querySelector(`[data-failed-item="${failedId}"] [data-failed-error]`);
+                        if (failedNode) {
+                            failedNode.textContent = reason;
+                        }
+                    } else {
+                        const newFailedId = `failed-${Date.now()}-${failedCounter++}`;
+                        failedPayloads.set(newFailedId, payload);
+                        createFailedMessageNode(newFailedId, payload, reason);
+                    }
+
+                    showSendError(reason);
+                } finally {
+                    setSendingState(false);
+                }
             };
 
             document.addEventListener('contextmenu', (event) => {
@@ -319,39 +526,77 @@
                 hideMenu();
             });
 
+            if (attachmentTrigger && attachmentInput) {
+                attachmentTrigger.addEventListener('click', () => {
+                    attachmentInput.click();
+                });
+
+                attachmentInput.addEventListener('change', () => {
+                    const selectedFile = attachmentInput.files?.[0] || null;
+                    if (!selectedFile) {
+                        updateAttachmentLabel(null);
+                        return;
+                    }
+
+                    if (selectedFile.size > MAX_ATTACHMENT_BYTES) {
+                        showSendError('El archivo supera el límite de 2 MB.');
+                        attachmentInput.value = '';
+                        updateAttachmentLabel(null);
+                        return;
+                    }
+
+                    clearSendError();
+                    updateAttachmentLabel(selectedFile);
+                });
+            }
+
             if (sendForm && messageInput) {
                 sendForm.addEventListener('submit', async (event) => {
                     event.preventDefault();
 
-                    const text = messageInput.value.trim();
-                    if (!text) {
+                    if (isSending) {
                         return;
                     }
 
-                    try {
-                        const response = await fetch(sendForm.action, {
-                            method: 'POST',
-                            headers: {
-                                'Accept': 'application/json',
-                                'X-Requested-With': 'XMLHttpRequest',
-                                ...socketHeaders(),
-                            },
-                            body: new FormData(sendForm),
-                        });
+                    const text = messageInput.value.trim();
+                    const file = attachmentInput?.files?.[0] || null;
 
-                        const data = await response.json();
-                        if (!response.ok || data.ok === false) {
-                            throw new Error(data.message || 'No se pudo enviar el mensaje.');
-                        }
-
-                        appendMessages([data.item]);
-                        messageInput.value = '';
-                        messageInput.focus();
-                    } catch (error) {
-                        window.alert(error.message);
+                    if (!text && !file) {
+                        return;
                     }
+
+                    if (file && file.size > MAX_ATTACHMENT_BYTES) {
+                        showSendError('El archivo supera el límite de 2 MB.');
+                        return;
+                    }
+
+                    messageInput.value = '';
+                    if (attachmentInput) {
+                        attachmentInput.value = '';
+                    }
+
+                    updateAttachmentLabel(null);
+                    await sendMessagePayload({ text, file });
                 });
             }
+
+            document.addEventListener('click', async (event) => {
+                const retryButton = event.target.closest('[data-retry-failed]');
+                if (retryButton) {
+                    const failedId = retryButton.getAttribute('data-retry-failed');
+                    const payload = failedPayloads.get(failedId);
+                    if (!payload) {
+                        return;
+                    }
+
+                    await sendMessagePayload(payload, failedId);
+                    return;
+                }
+
+                if (!menu.contains(event.target)) {
+                    hideMenu();
+                }
+            });
 
             scrollToLatest();
 
@@ -397,17 +642,12 @@
                         }
 
                         appendMessages(data.items || []);
+                        updateReadReceipts(data.read_receipts || []);
                     } catch (error) {
                         // Ignore polling errors.
                     }
                 }, 3000);
             }
-
-            document.addEventListener('click', (event) => {
-                if (!menu.contains(event.target)) {
-                    hideMenu();
-                }
-            });
 
             document.addEventListener('keydown', (event) => {
                 if (event.key === 'Escape') {

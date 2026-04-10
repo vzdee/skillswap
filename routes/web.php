@@ -27,6 +27,10 @@ Route::post('/dashboard/chat/{chat}/messages', [ChatController::class, 'storeMes
     ->middleware(['auth', 'verified'])
     ->name('dashboard.chat.messages.store');
 
+Route::get('/dashboard/chat/messages/{chatMessage}/attachment', [ChatController::class, 'downloadAttachment'])
+    ->middleware(['auth', 'verified'])
+    ->name('dashboard.chat.messages.attachment');
+
 Route::delete('/dashboard/chat/messages/{chatMessage}', [ChatController::class, 'destroyMessage'])
     ->middleware(['auth', 'verified'])
     ->name('dashboard.chat.messages.destroy');

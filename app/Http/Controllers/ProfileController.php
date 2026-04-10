@@ -92,9 +92,7 @@ class ProfileController extends Controller
                 'user' => [
                     'name' => $user->name,
                     'email' => $user->email,
-                    'profile_photo_url' => $user->profile_photo_path
-                        ? asset('storage/' . $user->profile_photo_path)
-                        : null,
+                    'profile_photo_url' => $user->profile_photo_url,
                 ],
             ]);
         }

@@ -11,6 +11,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'chat_id',
     'user_id',
     'body',
+    'read_at',
+    'attachment_path',
+    'attachment_name',
+    'attachment_mime',
+    'attachment_size',
 ])]
 class ChatMessage extends Model
 {

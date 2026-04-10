@@ -3,6 +3,8 @@
 use App\Models\Chat;
 use App\Models\ChatMessage;
 use App\Models\User;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 
 test('chat page displays chats for participant', function () {
     $user = User::factory()->create();
@@ -76,4 +78,71 @@ test('non participant cannot access another chat', function () {
         ->actingAs($intruder)
         ->get(route('dashboard.chat', ['chat' => $chat->id]))
         ->assertForbidden();
+});
+
+test('participant can send attachment and authorized user can download it', function () {
+    Storage::fake('local');
+
+    $user = User::factory()->create();
+    $partner = User::factory()->create();
+
+    $ordered = collect([$user->id, $partner->id])->sort()->values();
+
+    $chat = Chat::query()->create([
+        'user_one_id' => (int) $ordered[0],
+        'user_two_id' => (int) $ordered[1],
+    ]);
+
+    $file = UploadedFile::fake()->image('evidence.png')->size(500);
+
+    $response = $this
+        ->actingAs($user)
+        ->post(route('dashboard.chat.messages.store', $chat), [
+            'body' => '',
+            'attachment' => $file,
+        ]);
+
+    $response->assertRedirect(route('dashboard.chat', ['chat' => $chat->id]));
+
+    $message = ChatMessage::query()->where('chat_id', $chat->id)->latest('id')->firstOrFail();
+    expect($message->attachment_path)->not()->toBeNull();
+
+    $this
+        ->actingAs($partner)
+        ->get(route('dashboard.chat.messages.attachment', $message))
+        ->assertOk();
+});
+
+test('opening chat marks incoming messages as read and receipts are exposed', function () {
+    $sender = User::factory()->create();
+    $receiver = User::factory()->create();
+
+    $ordered = collect([$sender->id, $receiver->id])->sort()->values();
+
+    $chat = Chat::query()->create([
+        'user_one_id' => (int) $ordered[0],
+        'user_two_id' => (int) $ordered[1],
+    ]);
+
+    $message = ChatMessage::query()->create([
+        'chat_id' => $chat->id,
+        'user_id' => $sender->id,
+        'body' => 'Pendiente de lectura',
+    ]);
+
+    $this
+        ->actingAs($receiver)
+        ->get(route('dashboard.chat', ['chat' => $chat->id]))
+        ->assertOk();
+
+    $message->refresh();
+    expect($message->read_at)->not()->toBeNull();
+
+    $receiptResponse = $this
+        ->actingAs($sender)
+        ->getJson(route('dashboard.chat.messages.index', ['chat' => $chat->id, 'after_id' => $message->id]));
+
+    $receiptResponse->assertOk();
+    $receiptResponse->assertJsonPath('ok', true);
+    expect($receiptResponse->json('read_receipts'))->toContain((int) $message->id);
 });
