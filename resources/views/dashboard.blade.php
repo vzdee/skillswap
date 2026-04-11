@@ -192,7 +192,7 @@
                                                     <form method="POST" action="{{ route('matches.request.store') }}" class="js-send-request-form" data-target-user-id="{{ $match['user']->id }}">
                                                         @csrf
                                                         <input type="hidden" name="target_user_id" value="{{ $match['user']->id }}">
-                                                        <button type="submit" class="rounded-full bg-transparent px-5 py-2 text-2xl font-black text-gray-900 transition hover:text-blue-600">-> Enviar Solicitud</button>
+                                                        <button type="submit" class="inline-flex items-center rounded-xl border-2 border-blue-700 bg-blue-600 px-5 py-2 text-base font-bold text-white shadow-sm transition hover:bg-blue-700 hover:border-blue-800">Enviar Solicitud</button>
                                                     </form>
                                                 @endif
                                             </div>
@@ -271,7 +271,7 @@
                     <form method="POST" action="${sendRequestUrl}" class="js-send-request-form" data-target-user-id="${userId}">
                         <input type="hidden" name="_token" value="${csrfToken}">
                         <input type="hidden" name="target_user_id" value="${userId}">
-                        <button type="submit" class="rounded-full bg-transparent px-5 py-2 text-2xl font-black text-gray-900 transition hover:text-blue-600">-> Enviar Solicitud</button>
+                        <button type="submit" class="inline-flex items-center rounded-xl border-2 border-blue-700 bg-blue-600 px-5 py-2 text-base font-bold text-white shadow-sm transition hover:bg-blue-700 hover:border-blue-800">Enviar Solicitud</button>
                     </form>
                 `;
             };
