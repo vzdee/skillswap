@@ -1,5 +1,7 @@
 <?php
 
+use App\Models\Chat;
+use App\Models\ChatMessage;
 use App\Models\User;
 use App\Models\MatchRequest;
 use App\Models\UserReview;
@@ -38,9 +40,76 @@ test('profile view shows received reviews and rating summary', function () {
 
     $response
         ->assertOk()
-        ->assertSee('4.0/5')
         ->assertSee('Excelente compañero de intercambio.')
         ->assertSee('1 reseña');
+});
+
+test('profile review form is locked before ten exchanged messages', function () {
+    $viewer = User::factory()->create();
+    $target = User::factory()->create();
+
+    MatchRequest::query()->create([
+        'from_user_id' => $viewer->id,
+        'to_user_id' => $target->id,
+        'status' => 'accepted',
+        'responded_at' => now(),
+    ]);
+
+    $chat = Chat::query()->create([
+        'user_one_id' => min($viewer->id, $target->id),
+        'user_two_id' => max($viewer->id, $target->id),
+    ]);
+
+    foreach (range(1, 9) as $index) {
+        ChatMessage::query()->create([
+            'chat_id' => $chat->id,
+            'user_id' => $index % 2 === 0 ? $target->id : $viewer->id,
+            'body' => 'Mensaje #' . $index,
+        ]);
+    }
+
+    $response = $this
+        ->actingAs($viewer)
+        ->get(route('profile.show', ['user' => $target->id]));
+
+    $response
+        ->assertOk()
+        ->assertSee('Actualmente llevan 9 de 10 mensajes.')
+        ->assertDontSee('id="profile-review-form"', false);
+});
+
+test('profile review form is enabled after ten exchanged messages', function () {
+    $viewer = User::factory()->create();
+    $target = User::factory()->create();
+
+    MatchRequest::query()->create([
+        'from_user_id' => $viewer->id,
+        'to_user_id' => $target->id,
+        'status' => 'accepted',
+        'responded_at' => now(),
+    ]);
+
+    $chat = Chat::query()->create([
+        'user_one_id' => min($viewer->id, $target->id),
+        'user_two_id' => max($viewer->id, $target->id),
+    ]);
+
+    foreach (range(1, 10) as $index) {
+        ChatMessage::query()->create([
+            'chat_id' => $chat->id,
+            'user_id' => $index % 2 === 0 ? $target->id : $viewer->id,
+            'body' => 'Mensaje #' . $index,
+        ]);
+    }
+
+    $response = $this
+        ->actingAs($viewer)
+        ->get(route('profile.show', ['user' => $target->id]));
+
+    $response
+        ->assertOk()
+        ->assertSee('id="profile-review-form"', false)
+        ->assertSee('Selecciona estrellas');
 });
 
 test('profile information can be updated', function () {

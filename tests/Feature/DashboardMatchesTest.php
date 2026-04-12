@@ -79,7 +79,7 @@ test('dashboard shows only users with reciprocal skills and shared availability 
     $entry = $matches->first();
 
     expect($entry['user']->is($matchUser))->toBeTrue();
-    expect($entry['averageRating'])->toBe(4.0);
+    expect($entry['averageRating'])->toBe(4);
     expect($entry['skillsYouCanTeach'])->toContain('Python');
     expect($entry['skillsTheyCanTeach'])->toContain('Laravel');
     expect($entry['sharedAvailability'])->toContain('Lunes 7-8 AM');
@@ -87,7 +87,7 @@ test('dashboard shows only users with reciprocal skills and shared availability 
     $pendingRequests = $response->viewData('pendingRequests');
     expect($pendingRequests)->toHaveCount(1);
     expect($pendingRequests->first()['user']->is($pendingUser))->toBeTrue();
-    expect($pendingRequests->first()['averageRating'])->toBe(5.0);
+    expect($pendingRequests->first()['averageRating'])->toBe(5);
 });
 
 test('dashboard has no matches when the user has no reciprocal data yet', function () {

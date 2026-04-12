@@ -261,13 +261,13 @@ class DashboardController extends Controller
         return User::buildProfilePhotoUrl($path);
     }
 
-    private function averageRatingFromReviews(Collection $reviews): ?float
+    private function averageRatingFromReviews(Collection $reviews): ?int
     {
         if ($reviews->isEmpty()) {
             return null;
         }
 
-        return round((float) $reviews->avg('rating'), 1);
+        return (int) round((float) $reviews->avg('rating'));
     }
 
     private function careerLabel(?string $career): ?string

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Chat;
 use App\Models\MatchRequest;
 use App\Models\User;
 use App\Models\UserReview;
@@ -11,12 +12,14 @@ use Illuminate\Http\Request;
 
 class UserReviewController extends Controller
 {
+    private const MINIMUM_MESSAGES_FOR_REVIEW = Chat::REVIEW_MIN_MESSAGES;
+
     public function store(Request $request): RedirectResponse|JsonResponse
     {
         $validated = $request->validate([
             'reviewed_user_id' => ['required', 'integer', 'exists:users,id'],
             'rating' => ['required', 'integer', 'min:1', 'max:5'],
-            'comment' => ['nullable', 'string', 'max:2000'],
+            'comment' => ['nullable', 'string', 'max:100'],
         ]);
 
         $reviewer = $request->user();
@@ -28,6 +31,15 @@ class UserReviewController extends Controller
 
         if (!$this->hasAcceptedMatchBetween($reviewer->id, $reviewedUser->id)) {
             return $this->respondWithMessage($request, 'Solo puedes calificar personas con las que hiciste match.', false, 422);
+        }
+
+        if (!$this->hasReachedMinimumMessages($reviewer->id, $reviewedUser->id)) {
+            return $this->respondWithMessage(
+                $request,
+                'Deben intercambiar al menos ' . self::MINIMUM_MESSAGES_FOR_REVIEW . ' mensajes en el chat para dejar una reseña.',
+                false,
+                422
+            );
         }
 
         UserReview::query()->updateOrCreate(
@@ -59,6 +71,11 @@ class UserReviewController extends Controller
             })
             ->where('status', 'accepted')
             ->exists();
+    }
+
+    private function hasReachedMinimumMessages(int $userAId, int $userBId): bool
+    {
+        return Chat::messageCountBetweenUsers($userAId, $userBId) >= self::MINIMUM_MESSAGES_FOR_REVIEW;
     }
 
     private function respondWithMessage(Request $request, string $message, bool $ok, int $statusCode = 200, array $payload = []): RedirectResponse|JsonResponse

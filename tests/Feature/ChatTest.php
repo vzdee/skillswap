@@ -2,6 +2,7 @@
 
 use App\Models\Chat;
 use App\Models\ChatMessage;
+use App\Models\MatchRequest;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -145,4 +146,112 @@ test('opening chat marks incoming messages as read and receipts are exposed', fu
     $receiptResponse->assertOk();
     $receiptResponse->assertJsonPath('ok', true);
     expect($receiptResponse->json('read_receipts'))->toContain((int) $message->id);
+});
+
+test('chat shows review suggestion banner after ten exchanged messages', function () {
+    $user = User::factory()->create();
+    $partner = User::factory()->create();
+
+    MatchRequest::query()->create([
+        'from_user_id' => $user->id,
+        'to_user_id' => $partner->id,
+        'status' => 'accepted',
+        'responded_at' => now(),
+    ]);
+
+    $ordered = collect([$user->id, $partner->id])->sort()->values();
+
+    $chat = Chat::query()->create([
+        'user_one_id' => (int) $ordered[0],
+        'user_two_id' => (int) $ordered[1],
+    ]);
+
+    foreach (range(1, 10) as $index) {
+        ChatMessage::query()->create([
+            'chat_id' => $chat->id,
+            'user_id' => $index % 2 === 0 ? $partner->id : $user->id,
+            'body' => 'Mensaje #' . $index,
+        ]);
+    }
+
+    $this
+        ->actingAs($user)
+        ->get(route('dashboard.chat', ['chat' => $chat->id]))
+        ->assertOk()
+        ->assertSee('El sistema sugiere dejar una reseña y calificación.');
+});
+
+test('review suggestion dismissal is persisted per user', function () {
+    $user = User::factory()->create();
+    $partner = User::factory()->create();
+
+    MatchRequest::query()->create([
+        'from_user_id' => $user->id,
+        'to_user_id' => $partner->id,
+        'status' => 'accepted',
+        'responded_at' => now(),
+    ]);
+
+    $ordered = collect([$user->id, $partner->id])->sort()->values();
+
+    $chat = Chat::query()->create([
+        'user_one_id' => (int) $ordered[0],
+        'user_two_id' => (int) $ordered[1],
+    ]);
+
+    foreach (range(1, 10) as $index) {
+        ChatMessage::query()->create([
+            'chat_id' => $chat->id,
+            'user_id' => $index % 2 === 0 ? $partner->id : $user->id,
+            'body' => 'Mensaje #' . $index,
+        ]);
+    }
+
+    $this
+        ->actingAs($user)
+        ->postJson(route('dashboard.chat.review-suggestion.dismiss', $chat))
+        ->assertOk()
+        ->assertJsonPath('ok', true)
+        ->assertJsonPath('review_suggestion_dismissed', true);
+
+    $chat->refresh();
+
+    if ((int) $chat->user_one_id === (int) $user->id) {
+        expect($chat->user_one_review_prompt_dismissed_at)->not()->toBeNull();
+        expect($chat->user_two_review_prompt_dismissed_at)->toBeNull();
+    } else {
+        expect($chat->user_two_review_prompt_dismissed_at)->not()->toBeNull();
+        expect($chat->user_one_review_prompt_dismissed_at)->toBeNull();
+    }
+
+    $this
+        ->actingAs($user)
+        ->get(route('dashboard.chat', ['chat' => $chat->id]))
+        ->assertOk()
+        ->assertSee('data-dismissed="1"', false);
+
+    $this
+        ->actingAs($partner)
+        ->get(route('dashboard.chat', ['chat' => $chat->id]))
+        ->assertOk()
+        ->assertSee('data-dismissed="0"', false)
+        ->assertSee('El sistema sugiere dejar una reseña y calificación.');
+});
+
+test('non participant cannot dismiss review suggestion', function () {
+    $user = User::factory()->create();
+    $partner = User::factory()->create();
+    $intruder = User::factory()->create();
+
+    $ordered = collect([$user->id, $partner->id])->sort()->values();
+
+    $chat = Chat::query()->create([
+        'user_one_id' => (int) $ordered[0],
+        'user_two_id' => (int) $ordered[1],
+    ]);
+
+    $this
+        ->actingAs($intruder)
+        ->postJson(route('dashboard.chat.review-suggestion.dismiss', $chat))
+        ->assertForbidden();
 });

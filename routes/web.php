@@ -28,6 +28,10 @@ Route::post('/dashboard/chat/{chat}/messages', [ChatController::class, 'storeMes
     ->middleware(['auth', 'verified'])
     ->name('dashboard.chat.messages.store');
 
+Route::post('/dashboard/chat/{chat}/review-suggestion/dismiss', [ChatController::class, 'dismissReviewSuggestion'])
+    ->middleware(['auth', 'verified'])
+    ->name('dashboard.chat.review-suggestion.dismiss');
+
 Route::get('/dashboard/chat/messages/{chatMessage}/attachment', [ChatController::class, 'downloadAttachment'])
     ->middleware(['auth', 'verified'])
     ->name('dashboard.chat.messages.attachment');

@@ -28,7 +28,7 @@
                                                 <p class="truncate text-sm font-black text-gray-900 cursor-pointer" data-profile-open="{{ $item['partner']->id }}">{{ $item['partner']->name }}</p>
                                                 <div class="mt-0.5 flex items-center gap-0.5 text-base leading-none">
                                                     @for ($star = 1; $star <= 5; $star++)
-                                                        <span class="{{ $star <= (int) round($item['partnerAverageRating'] ?? 0) ? 'text-yellow-400' : 'text-gray-300' }}">★</span>
+                                                        <span class="{{ $star <= (int) ($item['partnerAverageRating'] ?? 0) ? 'text-yellow-400' : 'text-gray-300' }}">★</span>
                                                     @endfor
                                                 </div>
                                             </div>
@@ -118,6 +118,43 @@
                                 @empty
                                     <p class="text-center text-sm text-gray-700">Aún no hay mensajes en este chat.</p>
                                 @endforelse
+
+                                <div
+                                    id="chat-review-suggestion-message"
+                                    class="{{ $reviewPrompt['showSuggestion'] ? 'flex justify-center' : 'hidden' }}"
+                                    data-threshold="{{ (int) $reviewPrompt['minimumMessagesRequired'] }}"
+                                    data-messages-count="{{ (int) $reviewPrompt['messagesExchangedCount'] }}"
+                                    data-already-reviewed="{{ $reviewPrompt['alreadyReviewed'] ? '1' : '0' }}"
+                                    data-dismissed="{{ $reviewPrompt['dismissed'] ? '1' : '0' }}"
+                                    data-dismiss-url="{{ route('dashboard.chat.review-suggestion.dismiss', $activeChat) }}"
+                                >
+                                    <div class="max-w-[90%] rounded-2xl bg-gray-200 px-4 py-3 text-center text-xs text-gray-800 sm:text-sm">
+                                        <div class="mb-1 flex justify-start">
+                                            <button
+                                                id="chat-review-suggestion-dismiss"
+                                                type="button"
+                                                class="-ml-2 rounded-full px-1 text-sm font-black leading-none text-gray-600 transition hover:bg-gray-300 hover:text-gray-900"
+                                                aria-label="Cerrar sugerencia"
+                                            >
+                                                ×
+                                            </button>
+                                        </div>
+                                        <p id="chat-review-suggestion-text" class="font-semibold">
+                                            @if ($reviewPrompt['alreadyReviewed'])
+                                                Ya intercambiaron {{ (int) $reviewPrompt['messagesExchangedCount'] }} mensajes. Puedes editar tu evaluación desde el perfil.
+                                            @else
+                                                Ya intercambiaron {{ (int) $reviewPrompt['messagesExchangedCount'] }} mensajes. El sistema sugiere dejar una reseña y calificación.
+                                            @endif
+                                        </p>
+                                        <button
+                                            type="button"
+                                            class="mt-2 inline-flex items-center justify-center rounded-xl bg-blue-600 px-3 py-1.5 text-xs font-bold text-white transition hover:bg-blue-700"
+                                            data-profile-open="{{ $activePartner->id }}"
+                                        >
+                                            Ir al perfil
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
 
                             <div class="shrink-0 border-t border-gray-300/80 bg-[#b9bec8]/95 p-3 sm:p-4">
@@ -185,6 +222,9 @@
             const profileModal = document.getElementById('chat-profile-modal');
             const profileFrame = document.getElementById('chat-profile-modal-frame');
             const profileModalClose = document.getElementById('chat-profile-modal-close');
+            const reviewSuggestionMessage = document.getElementById('chat-review-suggestion-message');
+            const reviewSuggestionText = document.getElementById('chat-review-suggestion-text');
+            const reviewSuggestionDismiss = document.getElementById('chat-review-suggestion-dismiss');
             const activeChatId = Number.parseInt(messagesList?.dataset.activeChatId || '0', 10);
             const hasEcho = Boolean(window.Echo && activeChatId > 0);
 
@@ -198,8 +238,109 @@
             let currentMessageId = 0;
             let failedCounter = 0;
             const failedPayloads = new Map();
+            const reviewThreshold = Number.parseInt(reviewSuggestionMessage?.dataset.threshold || '10', 10);
+            const authUserAlreadyReviewed = reviewSuggestionMessage?.dataset.alreadyReviewed === '1';
+            const reviewSuggestionDismissUrl = reviewSuggestionMessage?.dataset.dismissUrl || '';
+            let reviewSuggestionDismissed = reviewSuggestionMessage?.dataset.dismissed === '1';
+            let isDismissingReviewSuggestion = false;
+            let messagesExchangedCount = Number.parseInt(reviewSuggestionMessage?.dataset.messagesCount || '0', 10);
             let lastMessageId = Array.from(messagesList.querySelectorAll('[data-message-id]'))
                 .reduce((maxValue, node) => Math.max(maxValue, Number.parseInt(node.dataset.messageId || '0', 10) || 0), 0);
+
+            const placeReviewSuggestionAsLast = () => {
+                if (!reviewSuggestionMessage || reviewSuggestionMessage.classList.contains('hidden')) {
+                    return;
+                }
+
+                if (messagesList.lastElementChild !== reviewSuggestionMessage) {
+                    messagesList.appendChild(reviewSuggestionMessage);
+                }
+            };
+
+            const refreshReviewSuggestion = (serverCount = null) => {
+                if (!reviewSuggestionMessage) {
+                    return;
+                }
+
+                if (Number.isInteger(serverCount) && serverCount >= 0) {
+                    messagesExchangedCount = serverCount;
+                }
+
+                if (reviewSuggestionDismissed || messagesExchangedCount < reviewThreshold) {
+                    reviewSuggestionMessage.classList.add('hidden');
+                    return;
+                }
+
+                if (reviewSuggestionText) {
+                    if (authUserAlreadyReviewed) {
+                        reviewSuggestionText.textContent = `Ya intercambiaron ${messagesExchangedCount} mensajes. Puedes editar tu evaluación desde el perfil.`;
+                    } else {
+                        reviewSuggestionText.textContent = `Ya intercambiaron ${messagesExchangedCount} mensajes. El sistema sugiere dejar una reseña y calificación.`;
+                    }
+                }
+
+                reviewSuggestionMessage.classList.remove('hidden');
+                reviewSuggestionMessage.classList.add('flex', 'justify-center');
+                placeReviewSuggestionAsLast();
+            };
+
+            const syncReviewSuggestionDismissed = (serverValue) => {
+                if (typeof serverValue !== 'boolean') {
+                    return;
+                }
+
+                // Keep dismissed state sticky in current session to avoid polling races.
+                reviewSuggestionDismissed = reviewSuggestionDismissed || serverValue;
+            };
+
+            const dismissReviewSuggestion = async () => {
+                if (!reviewSuggestionMessage) {
+                    return;
+                }
+
+                if (reviewSuggestionDismissed || isDismissingReviewSuggestion) {
+                    return;
+                }
+
+                reviewSuggestionDismissed = true;
+                reviewSuggestionMessage.dataset.dismissed = '1';
+                reviewSuggestionMessage.classList.add('hidden');
+                isDismissingReviewSuggestion = true;
+
+                if (!reviewSuggestionDismissUrl) {
+                    isDismissingReviewSuggestion = false;
+                    return;
+                }
+
+                try {
+                    const response = await fetch(reviewSuggestionDismissUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                            'X-CSRF-TOKEN': csrfToken,
+                            ...socketHeaders(),
+                        },
+                        body: new URLSearchParams({
+                            _token: csrfToken,
+                        }),
+                    });
+
+                    const data = await response.json();
+                    if (!response.ok || data.ok === false) {
+                        throw new Error(data.message || 'No se pudo cerrar la sugerencia.');
+                    }
+                    syncReviewSuggestionDismissed(data.review_suggestion_dismissed);
+
+                } catch (error) {
+                    reviewSuggestionDismissed = false;
+                    reviewSuggestionMessage.dataset.dismissed = '0';
+                    refreshReviewSuggestion(messagesExchangedCount);
+                } finally {
+                    isDismissingReviewSuggestion = false;
+                }
+            };
 
             const formatPhoto = (url, name, userId) => {
                 if (url) {
@@ -334,9 +475,11 @@
                     const node = renderMessageNode(item);
                     messagesList.appendChild(node);
                     lastMessageId = Math.max(lastMessageId, Number(item.id));
+                    messagesExchangedCount += 1;
                 });
 
                 messagesList.scrollTop = messagesList.scrollHeight;
+                refreshReviewSuggestion();
             };
 
             const updateReadReceipts = (ids) => {
@@ -439,6 +582,7 @@
                 `;
 
                 messagesList.appendChild(wrapper);
+                placeReviewSuggestionAsLast();
                 scrollToLatest();
             };
 
@@ -488,6 +632,8 @@
 
                     appendMessages([data.item]);
                     updateReadReceipts(data.read_receipts || []);
+                    syncReviewSuggestionDismissed(data.review_suggestion_dismissed);
+                    refreshReviewSuggestion(Number.isInteger(data.messages_exchanged_count) ? data.messages_exchanged_count : null);
 
                     if (messageInput) {
                         messageInput.focus();
@@ -575,6 +721,9 @@
                     if (node) {
                         node.remove();
                     }
+
+                    syncReviewSuggestionDismissed(data.review_suggestion_dismissed);
+                    refreshReviewSuggestion(Number.isInteger(data.messages_exchanged_count) ? data.messages_exchanged_count : Math.max(0, messagesExchangedCount - 1));
                 }).catch((error) => {
                     window.alert(error.message);
                 });
@@ -655,6 +804,13 @@
             });
 
             scrollToLatest();
+            refreshReviewSuggestion(messagesExchangedCount);
+
+            reviewSuggestionDismiss?.addEventListener('click', async (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                await dismissReviewSuggestion();
+            });
 
             window.addEventListener('resize', () => {
                 scrollToLatest();
@@ -699,6 +855,8 @@
 
                         appendMessages(data.items || []);
                         updateReadReceipts(data.read_receipts || []);
+                        syncReviewSuggestionDismissed(data.review_suggestion_dismissed);
+                        refreshReviewSuggestion(Number.isInteger(data.messages_exchanged_count) ? data.messages_exchanged_count : null);
                     } catch (error) {
                         // Ignore polling errors.
                     }

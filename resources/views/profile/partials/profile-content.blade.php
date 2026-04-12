@@ -3,7 +3,16 @@
     $profilePhotoUrl = $user->profile_photo_url;
     $age = $user->birth_date?->age;
     $averageRating = $averageRating ?? null;
-    $filledStars = (int) floor((float) ($averageRating ?? 0));
+    $filledStars = (int) round((float) ($averageRating ?? 0));
+    $reviewEligibility = $reviewEligibility ?? [];
+    $isOwnProfile = (bool) data_get($reviewEligibility, 'isOwnProfile', true);
+    $hasAcceptedMatch = (bool) data_get($reviewEligibility, 'hasAcceptedMatch', false);
+    $messagesExchangedCount = (int) data_get($reviewEligibility, 'messagesExchangedCount', 0);
+    $minimumMessagesRequired = (int) data_get($reviewEligibility, 'minimumMessagesRequired', 10);
+    $canLeaveReview = (bool) data_get($reviewEligibility, 'canLeaveReview', false);
+    $existingReview = data_get($reviewEligibility, 'existingReview');
+    $existingRating = (int) old('rating', data_get($existingReview, 'rating', 0));
+    $existingComment = (string) old('comment', data_get($existingReview, 'comment', ''));
     $careerLabels = [
         'ingenieria_biomedica' => 'Ingenieria Biomedica',
         'derecho' => 'Ingenieria Biomedica',
@@ -34,9 +43,6 @@
                         <span class="{{ $star <= $filledStars ? 'text-yellow-400' : 'text-gray-300' }}">★</span>
                     @endfor
                 </div>
-                <p class="text-sm font-semibold text-gray-600">
-                    {{ $averageRating !== null ? number_format($averageRating, 1) . '/5' : '' }}
-                </p>
             </div>
 
             <div class="flex flex-col md:flex-row md:items-start gap-6">
@@ -160,6 +166,157 @@
                     @endforelse
                 </div>
             </div>
+
+            @if (! $isOwnProfile)
+                <div class="mt-8 rounded-3xl bg-gray-50 p-4 sm:p-6">
+                    <div class="flex items-center justify-between gap-3">
+                        <h2 class="text-xl font-bold text-gray-900">Tu evaluación</h2>
+                        <p class="text-sm font-semibold text-gray-500">Califica a {{ $user->name }}</p>
+                    </div>
+
+                    @if (session('request_success'))
+                        <div class="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">
+                            {{ session('request_success') }}
+                        </div>
+                    @endif
+
+                    @if (session('request_error'))
+                        <div class="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+                            {{ session('request_error') }}
+                        </div>
+                    @endif
+
+                    @if ($canLeaveReview)
+                        <form id="profile-review-form" method="POST" action="{{ route('reviews.store') }}" class="mt-4 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-gray-100 sm:p-5">
+                            @csrf
+                            <input type="hidden" name="reviewed_user_id" value="{{ $user->id }}">
+                            <input type="hidden" id="profile-review-rating" name="rating" value="{{ $existingRating > 0 ? $existingRating : '' }}">
+
+                            <div>
+                                <p class="text-sm font-semibold text-gray-700">Selecciona estrellas</p>
+                                <div class="mt-2 flex items-center gap-1 text-4xl leading-none" role="radiogroup" aria-label="Calificacion con estrellas">
+                                    @for ($star = 1; $star <= 5; $star++)
+                                        <button
+                                            type="button"
+                                            class="profile-review-star transition hover:scale-105 {{ $star <= $existingRating ? 'text-yellow-400' : 'text-gray-300' }}"
+                                            data-rating-star="{{ $star }}"
+                                            aria-label="{{ $star }} estrella{{ $star > 1 ? 's' : '' }}"
+                                        >★</button>
+                                    @endfor
+                                </div>
+                                <p id="profile-review-rating-error" class="mt-2 hidden text-sm font-semibold text-red-600">Selecciona una calificación de 1 a 5 estrellas.</p>
+                                @error('rating')
+                                    <p class="mt-2 text-sm font-semibold text-red-600">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <div class="mt-4">
+                                <label for="profile-review-comment" class="text-sm font-semibold text-gray-700">Reseña</label>
+                                <textarea
+                                    id="profile-review-comment"
+                                    name="comment"
+                                    rows="4"
+                                    maxlength="100"
+                                    placeholder="Escribe tu experiencia con esta persona..."
+                                    class="mt-2 w-full rounded-xl border border-gray-300 px-3 py-2 text-sm text-gray-800 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                                >{{ $existingComment }}</textarea>
+                                <p id="profile-review-comment-counter" class="mt-1 text-xs text-gray-500">100 caracteres restantes</p>
+                                @error('comment')
+                                    <p class="mt-2 text-sm font-semibold text-red-600">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <div class="mt-4 flex items-center justify-between gap-3">
+                                <p class="text-xs text-gray-500">{{ data_get($existingReview, 'id') ? 'Puedes actualizar tu evaluación cuando quieras.' : 'Tu evaluación ayudará a otros usuarios.' }}</p>
+                                <button type="submit" class="rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700">
+                                    {{ data_get($existingReview, 'id') ? 'Actualizar evaluación' : 'Guardar evaluación' }}
+                                </button>
+                            </div>
+                        </form>
+                    @else
+                        <div class="mt-4 rounded-2xl border border-dashed border-gray-300 bg-white px-4 py-5 text-sm text-gray-700">
+                            @if (! $hasAcceptedMatch)
+                                <p class="font-semibold text-gray-800">Necesitas un match aceptado para poder calificar.</p>
+                                <p class="mt-1 text-gray-500">Cuando esta persona y tú acepten la solicitud, se habilitará la evaluación.</p>
+                            @else
+                                <p class="font-semibold text-gray-800">La evaluación se habilita después de {{ $minimumMessagesRequired }} mensajes en conjunto.</p>
+                                <p class="mt-1 text-gray-500">Actualmente llevan {{ $messagesExchangedCount }} de {{ $minimumMessagesRequired }} mensajes.</p>
+                            @endif
+                        </div>
+                    @endif
+                </div>
+            @endif
         </div>
     </div>
 </div>
+
+@if (! $isOwnProfile && $canLeaveReview)
+    <script>
+        (() => {
+            const form = document.getElementById('profile-review-form');
+            const ratingInput = document.getElementById('profile-review-rating');
+            const ratingError = document.getElementById('profile-review-rating-error');
+            const commentInput = document.getElementById('profile-review-comment');
+            const commentCounter = document.getElementById('profile-review-comment-counter');
+
+            if (!form || !ratingInput) {
+                return;
+            }
+
+            const stars = Array.from(form.querySelectorAll('[data-rating-star]'));
+
+            const paintStars = (ratingValue) => {
+                stars.forEach((star) => {
+                    const value = Number.parseInt(star.dataset.ratingStar || '0', 10);
+                    if (value <= ratingValue) {
+                        star.classList.add('text-yellow-400');
+                        star.classList.remove('text-gray-300');
+                    } else {
+                        star.classList.add('text-gray-300');
+                        star.classList.remove('text-yellow-400');
+                    }
+                });
+            };
+
+            const updateCommentCounter = () => {
+                if (!commentInput || !commentCounter) {
+                    return;
+                }
+
+                const maxLength = Number.parseInt(commentInput.getAttribute('maxlength') || '100', 10);
+                const used = commentInput.value.length;
+                const remaining = Math.max(0, maxLength - used);
+                commentCounter.textContent = `${remaining} caracteres restantes`;
+            };
+
+            if (commentInput) {
+                commentInput.addEventListener('input', updateCommentCounter);
+                updateCommentCounter();
+            }
+
+            stars.forEach((star) => {
+                star.addEventListener('click', () => {
+                    const value = Number.parseInt(star.dataset.ratingStar || '0', 10);
+                    ratingInput.value = String(value);
+                    paintStars(value);
+
+                    if (ratingError) {
+                        ratingError.classList.add('hidden');
+                    }
+                });
+            });
+
+            form.addEventListener('submit', (event) => {
+                const selectedRating = Number.parseInt(ratingInput.value || '0', 10);
+                if (selectedRating >= 1 && selectedRating <= 5) {
+                    return;
+                }
+
+                event.preventDefault();
+                if (ratingError) {
+                    ratingError.classList.remove('hidden');
+                }
+            });
+        })();
+    </script>
+@endif

@@ -5,12 +5,15 @@ namespace App\Http\Controllers;
 use App\Events\ChatMessageSent;
 use App\Models\Chat;
 use App\Models\ChatMessage;
+use App\Models\MatchRequest;
 use App\Models\User;
+use App\Models\UserReview;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Throwable;
 
@@ -53,7 +56,7 @@ class ChatController extends Controller
                     'partner' => $partner,
                     'partnerPhotoUrl' => $this->photoUrl($partner?->profile_photo_path),
                     'partnerAverageRating' => $partner && $partner->receivedReviews->isNotEmpty()
-                        ? round((float) $partner->receivedReviews->avg('rating'), 1)
+                        ? (int) round((float) $partner->receivedReviews->avg('rating'))
                         : null,
                     'preview' => $preview,
                     'lastAt' => $lastMessage?->created_at,
@@ -67,6 +70,14 @@ class ChatController extends Controller
         $activeChat = $this->resolveActiveChat($chatItems, $requestedChatId);
         $activeMessages = collect();
         $activePartner = null;
+        $reviewPrompt = [
+            'minimumMessagesRequired' => Chat::REVIEW_MIN_MESSAGES,
+            'messagesExchangedCount' => 0,
+            'showSuggestion' => false,
+            'canLeaveReview' => false,
+            'alreadyReviewed' => false,
+            'dismissed' => false,
+        ];
 
         if ($activeChat) {
             $this->markIncomingMessagesAsRead($activeChat, (int) $authUser->id);
@@ -87,6 +98,29 @@ class ChatController extends Controller
                         'photoUrl' => $this->photoUrl($message->user->profile_photo_path),
                     ];
                 });
+
+            $messagesExchangedCount = (int) $activeChat->messages()->count();
+            $hasAcceptedMatch = Schema::hasTable('match_requests')
+                ? $this->hasAcceptedMatchBetween((int) $authUser->id, (int) $activePartner->id)
+                : false;
+            $alreadyReviewed = Schema::hasTable('user_reviews')
+                ? UserReview::query()
+                    ->where('reviewer_id', $authUser->id)
+                    ->where('reviewed_user_id', $activePartner->id)
+                    ->exists()
+                : false;
+            $dismissed = $this->isReviewSuggestionDismissed($activeChat, (int) $authUser->id);
+
+            $canLeaveReview = $hasAcceptedMatch && $messagesExchangedCount >= Chat::REVIEW_MIN_MESSAGES;
+
+            $reviewPrompt = [
+                'minimumMessagesRequired' => Chat::REVIEW_MIN_MESSAGES,
+                'messagesExchangedCount' => $messagesExchangedCount,
+                'showSuggestion' => $canLeaveReview && !$dismissed,
+                'canLeaveReview' => $canLeaveReview,
+                'alreadyReviewed' => $alreadyReviewed,
+                'dismissed' => $dismissed,
+            ];
         }
 
         return view('chat.index', [
@@ -95,6 +129,7 @@ class ChatController extends Controller
             'activeMessages' => $activeMessages,
             'activePartner' => $activePartner,
             'activePartnerPhotoUrl' => $this->photoUrl($activePartner?->profile_photo_path),
+            'reviewPrompt' => $reviewPrompt,
         ]);
     }
 
@@ -137,6 +172,7 @@ class ChatController extends Controller
         }
 
         $message = $chat->messages()->create($messageData);
+        $messagesExchangedCount = (int) $chat->messages()->count();
 
         $message->load('user:id,name,profile_photo_path');
         $item = $this->serializeMessage($message, $user->id);
@@ -153,6 +189,9 @@ class ChatController extends Controller
                 'message' => 'Mensaje enviado.',
                 'chat_id' => (int) $chat->id,
                 'item' => $item,
+                'messages_exchanged_count' => $messagesExchangedCount,
+                'review_threshold' => Chat::REVIEW_MIN_MESSAGES,
+                'review_suggestion_dismissed' => $this->isReviewSuggestionDismissed($chat, (int) $user->id),
             ]);
         }
 
@@ -177,6 +216,7 @@ class ChatController extends Controller
         }
 
         $chatMessage->delete();
+        $messagesExchangedCount = (int) $chat->messages()->count();
 
         if ($request->expectsJson()) {
             return response()->json([
@@ -184,6 +224,9 @@ class ChatController extends Controller
                 'message' => 'Mensaje eliminado.',
                 'chat_id' => (int) $chatId,
                 'message_id' => $messageId,
+                'messages_exchanged_count' => $messagesExchangedCount,
+                'review_threshold' => Chat::REVIEW_MIN_MESSAGES,
+                'review_suggestion_dismissed' => $this->isReviewSuggestionDismissed($chat, $userId),
             ]);
         }
 
@@ -222,6 +265,31 @@ class ChatController extends Controller
             'chat_id' => (int) $chat->id,
             'items' => $messages,
             'read_receipts' => $readReceipts,
+            'messages_exchanged_count' => (int) $chat->messages()->count(),
+            'review_threshold' => Chat::REVIEW_MIN_MESSAGES,
+            'review_suggestion_dismissed' => $this->isReviewSuggestionDismissed($chat, (int) $user->id),
+        ]);
+    }
+
+    public function dismissReviewSuggestion(Request $request, Chat $chat): JsonResponse
+    {
+        $userId = (int) $request->user()->id;
+        $this->ensureParticipant($chat, $userId);
+
+        if ((int) $chat->user_one_id === $userId) {
+            $chat->forceFill([
+                'user_one_review_prompt_dismissed_at' => now(),
+            ])->save();
+        } else {
+            $chat->forceFill([
+                'user_two_review_prompt_dismissed_at' => now(),
+            ])->save();
+        }
+
+        return response()->json([
+            'ok' => true,
+            'chat_id' => (int) $chat->id,
+            'review_suggestion_dismissed' => true,
         ]);
     }
 
@@ -300,5 +368,35 @@ class ChatController extends Controller
             'attachment_mime' => $attachmentMime,
             'attachment_is_image' => $attachmentMime ? str_starts_with($attachmentMime, 'image/') : false,
         ];
+    }
+
+    private function hasAcceptedMatchBetween(int $userAId, int $userBId): bool
+    {
+        return MatchRequest::query()
+            ->where(function ($query) use ($userAId, $userBId): void {
+                $query->where(function ($innerQuery) use ($userAId, $userBId): void {
+                    $innerQuery->where('from_user_id', $userAId)
+                        ->where('to_user_id', $userBId);
+                })
+                ->orWhere(function ($innerQuery) use ($userAId, $userBId): void {
+                    $innerQuery->where('from_user_id', $userBId)
+                        ->where('to_user_id', $userAId);
+                });
+            })
+            ->where('status', 'accepted')
+            ->exists();
+    }
+
+    private function isReviewSuggestionDismissed(Chat $chat, int $userId): bool
+    {
+        if ((int) $chat->user_one_id === $userId) {
+            return $chat->user_one_review_prompt_dismissed_at !== null;
+        }
+
+        if ((int) $chat->user_two_id === $userId) {
+            return $chat->user_two_review_prompt_dismissed_at !== null;
+        }
+
+        return false;
     }
 }

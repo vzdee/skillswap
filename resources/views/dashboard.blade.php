@@ -50,12 +50,9 @@
                                             <div class="absolute right-6 top-6 flex flex-col items-end gap-1">
                                                 <div class="flex items-center gap-0.5 text-3xl leading-none">
                                                     @for ($star = 1; $star <= 5; $star++)
-                                                        <span class="{{ $star <= (int) round($pending['averageRating'] ?? 0) ? 'text-yellow-400' : 'text-gray-300' }}">★</span>
+                                                        <span class="{{ $star <= (int) ($pending['averageRating'] ?? 0) ? 'text-yellow-400' : 'text-gray-300' }}">★</span>
                                                     @endfor
                                                 </div>
-                                                @if (! is_null($pending['averageRating']))
-                                                    <p class="text-xs font-semibold text-gray-700">{{ number_format($pending['averageRating'], 1) }}/5</p>
-                                                @endif
                                                 <a
                                                     href="{{ route('profile.show', $pending['user']) }}"
                                                     data-profile-open="{{ $pending['user']->id }}"
@@ -163,12 +160,9 @@
                                             <div class="absolute right-6 top-6 flex flex-col items-end gap-1">
                                                 <div class="flex items-center gap-0.5 text-3xl leading-none">
                                                     @for ($star = 1; $star <= 5; $star++)
-                                                        <span class="{{ $star <= (int) round($match['averageRating'] ?? 0) ? 'text-yellow-400' : 'text-gray-300' }}">★</span>
+                                                        <span class="{{ $star <= (int) ($match['averageRating'] ?? 0) ? 'text-yellow-400' : 'text-gray-300' }}">★</span>
                                                     @endfor
                                                 </div>
-                                                @if (! is_null($match['averageRating']))
-                                                    <p class="text-xs font-semibold text-gray-700">{{ number_format($match['averageRating'], 1) }}/5</p>
-                                                @endif
                                                 <a
                                                     href="{{ route('profile.show', $match['user']) }}"
                                                     data-profile-open="{{ $match['user']->id }}"
