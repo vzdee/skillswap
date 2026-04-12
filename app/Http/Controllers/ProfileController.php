@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\ProfileUpdateRequest;
 use App\Models\Skill;
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -127,9 +128,28 @@ class ProfileController extends Controller
 
     public function view(Request $request): View
     {
-        $user = $request->user();
+        return view('profile.view', $this->buildProfileViewData(
+            $request->user(),
+            $request->boolean('embed')
+        ));
+    }
+
+    public function show(Request $request, User $user): View
+    {
+        return view('profile.view', $this->buildProfileViewData(
+            $user,
+            $request->boolean('embed')
+        ));
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function buildProfileViewData(User $user, bool $embeddedProfile = false): array
+    {
         $hasSkillsSchema = Schema::hasTable('skills') && Schema::hasTable('user_skill');
         $hasAvailabilitySchema = Schema::hasTable('user_availabilities');
+        $hasReviewsSchema = Schema::hasTable('user_reviews');
 
         $relationsToLoad = [];
 
@@ -142,16 +162,28 @@ class ProfileController extends Controller
             $relationsToLoad[] = 'availabilities:id,user_id,weekday,time_block';
         }
 
+        if ($hasReviewsSchema) {
+            $relationsToLoad[] = 'receivedReviews.reviewer:id,name,profile_photo_path';
+        }
+
         if (count($relationsToLoad) > 0) {
             $user->load($relationsToLoad);
         }
 
-        return view('profile.view', [
+        $receivedReviews = $hasReviewsSchema ? $user->receivedReviews->sortByDesc('created_at')->values() : collect();
+        $averageRating = $receivedReviews->isNotEmpty()
+            ? round((float) $receivedReviews->avg('rating'), 1)
+            : null;
+
+        return [
             'user' => $user,
             'taughtSkills' => $hasSkillsSchema ? $user->taughtSkills : collect(),
             'learningSkills' => $hasSkillsSchema ? $user->learningSkills : collect(),
             'availabilities' => $hasAvailabilitySchema ? $user->availabilities : collect(),
             'availabilityDays' => UserSetupController::availabilityDays(),
-        ]);
+            'receivedReviews' => $receivedReviews,
+            'averageRating' => $averageRating,
+            'embeddedProfile' => $embeddedProfile,
+        ];
     }
 }

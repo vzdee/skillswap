@@ -91,6 +91,7 @@ class DashboardController extends Controller
                         'taughtSkills:id,name',
                         'learningSkills:id,name',
                         'availabilities:id,user_id,weekday,time_block',
+                        'receivedReviews:id,reviewed_user_id,rating',
                     ])
                     ->orderBy('name')
                     ->get(['id', 'name', 'email', 'profile_photo_path', 'birth_date', 'career']);
@@ -142,6 +143,8 @@ class DashboardController extends Controller
                             'photoUrl' => $this->profilePhotoUrl($candidate->profile_photo_path),
                             'age' => $candidate->birth_date?->age,
                             'career' => $this->careerLabel($candidate->career),
+                            'reviewsCount' => $candidate->receivedReviews->count(),
+                            'averageRating' => $this->averageRatingFromReviews($candidate->receivedReviews),
                             'skillsYouCanTeach' => $skillsYouCanTeach,
                             'skillsTheyCanTeach' => $skillsTheyCanTeach,
                             'sharedAvailability' => $sharedAvailability,
@@ -166,6 +169,7 @@ class DashboardController extends Controller
                         'fromUser.taughtSkills:id,name',
                         'fromUser.learningSkills:id,name',
                         'fromUser.availabilities:id,user_id,weekday,time_block',
+                        'fromUser.receivedReviews:id,reviewed_user_id,rating',
                     ])
                     ->orderByDesc('created_at')
                     ->get()
@@ -198,6 +202,8 @@ class DashboardController extends Controller
                             'photoUrl' => $this->profilePhotoUrl($requester->profile_photo_path),
                             'age' => $requester->birth_date?->age,
                             'career' => $this->careerLabel($requester->career),
+                            'reviewsCount' => $requester->receivedReviews->count(),
+                            'averageRating' => $this->averageRatingFromReviews($requester->receivedReviews),
                             'skillsTheyCanTeach' => $skillsTheyCanTeach,
                             'theirInterests' => $theirInterests,
                             'sharedAvailability' => $sharedAvailability,
@@ -253,6 +259,15 @@ class DashboardController extends Controller
     private function profilePhotoUrl(?string $path): ?string
     {
         return User::buildProfilePhotoUrl($path);
+    }
+
+    private function averageRatingFromReviews(Collection $reviews): ?float
+    {
+        if ($reviews->isEmpty()) {
+            return null;
+        }
+
+        return round((float) $reviews->avg('rating'), 1);
     }
 
     private function careerLabel(?string $career): ?string

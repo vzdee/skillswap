@@ -46,8 +46,26 @@
                             @else
                                 <div class="grid gap-4 lg:grid-cols-2">
                                     @foreach ($pendingRequests as $pending)
-                                        <article class="rounded-[32px] bg-zinc-200/80 p-6" data-pending-card="{{ $pending['request']->id }}" data-from-user-id="{{ $pending['user']->id }}">
-                                            <div class="flex items-start gap-4">
+                                        <article class="relative rounded-[32px] bg-zinc-200/80 p-6" data-pending-card="{{ $pending['request']->id }}" data-from-user-id="{{ $pending['user']->id }}">
+                                            <div class="absolute right-6 top-6 flex flex-col items-end gap-1">
+                                                <div class="flex items-center gap-0.5 text-3xl leading-none">
+                                                    @for ($star = 1; $star <= 5; $star++)
+                                                        <span class="{{ $star <= (int) round($pending['averageRating'] ?? 0) ? 'text-yellow-400' : 'text-gray-300' }}">★</span>
+                                                    @endfor
+                                                </div>
+                                                @if (! is_null($pending['averageRating']))
+                                                    <p class="text-xs font-semibold text-gray-700">{{ number_format($pending['averageRating'], 1) }}/5</p>
+                                                @endif
+                                                <a
+                                                    href="{{ route('profile.show', $pending['user']) }}"
+                                                    data-profile-open="{{ $pending['user']->id }}"
+                                                    class="rounded-full px-3 py-1 text-xs font-semibold transition {{ $pending['reviewsCount'] > 0 ? 'bg-blue-100 text-blue-700 hover:bg-blue-200' : 'bg-gray-200 text-gray-500 hover:bg-gray-300' }}"
+                                                >
+                                                    {{ $pending['reviewsCount'] > 0 ? ($pending['reviewsCount'] === 1 ? '1 reseña' : $pending['reviewsCount'] . ' reseñas') : 'Sin reseñas por el momento' }}
+                                                </a>
+                                            </div>
+
+                                            <div class="flex items-start gap-4 pr-28 sm:pr-36">
                                                 @if ($pending['photoUrl'])
                                                     <img src="{{ $pending['photoUrl'] }}" alt="{{ $pending['user']->name }}" class="h-20 w-20 rounded-full object-cover">
                                                 @else
@@ -56,13 +74,22 @@
                                                     </div>
                                                 @endif
 
-                                                <div>
-                                                    <h2 class="text-4xl font-black leading-none text-gray-900">
-                                                        {{ $pending['user']->name }}{{ $pending['age'] ? ', ' . $pending['age'] . ' años' : '' }}
+                                                <div class="min-w-0">
+                                                    <h2 class="text-4xl font-black leading-tight text-gray-900 break-words">
+                                                        {{ $pending['user']->name }}
                                                     </h2>
-                                                    <p class="mt-2 text-xl font-semibold text-gray-900">
-                                                        {{ $pending['career'] ?: 'Carrera no especificada' }}
-                                                    </p>
+
+                                                    <div class="mt-2 space-y-1">
+                                                        @if ($pending['age'])
+                                                            <div class="inline-flex items-center rounded-full bg-white/80 px-3 py-1 text-sm font-semibold text-gray-800 shadow-sm">
+                                                                Tiene {{ $pending['age'] }} años
+                                                            </div>
+                                                        @endif
+
+                                                        <div class="inline-flex items-center rounded-full bg-white/80 px-3 py-1 text-sm font-semibold text-gray-800 shadow-sm">
+                                                            Estudia {{ $pending['career'] ?: 'Carrera no especificada' }}
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </div>
 
@@ -132,8 +159,26 @@
                             @else
                                 <div class="mt-4 grid gap-4 lg:grid-cols-2">
                                     @foreach ($matches as $match)
-                                        <article class="rounded-[32px] bg-zinc-200/80 p-6" data-match-card="{{ $match['user']->id }}">
-                                            <div class="flex items-start gap-4">
+                                        <article class="relative rounded-[32px] bg-zinc-200/80 p-6" data-match-card="{{ $match['user']->id }}">
+                                            <div class="absolute right-6 top-6 flex flex-col items-end gap-1">
+                                                <div class="flex items-center gap-0.5 text-3xl leading-none">
+                                                    @for ($star = 1; $star <= 5; $star++)
+                                                        <span class="{{ $star <= (int) round($match['averageRating'] ?? 0) ? 'text-yellow-400' : 'text-gray-300' }}">★</span>
+                                                    @endfor
+                                                </div>
+                                                @if (! is_null($match['averageRating']))
+                                                    <p class="text-xs font-semibold text-gray-700">{{ number_format($match['averageRating'], 1) }}/5</p>
+                                                @endif
+                                                <a
+                                                    href="{{ route('profile.show', $match['user']) }}"
+                                                    data-profile-open="{{ $match['user']->id }}"
+                                                    class="rounded-full px-3 py-1 text-xs font-semibold transition {{ $match['reviewsCount'] > 0 ? 'bg-blue-100 text-blue-700 hover:bg-blue-200' : 'bg-gray-200 text-gray-500 hover:bg-gray-300' }}"
+                                                >
+                                                    {{ $match['reviewsCount'] > 0 ? ($match['reviewsCount'] === 1 ? '1 reseña' : $match['reviewsCount'] . ' reseñas') : 'Sin reseñas por el momento' }}
+                                                </a>
+                                            </div>
+
+                                            <div class="flex items-start gap-4 pr-28 sm:pr-36">
                                                 @if ($match['photoUrl'])
                                                     <img src="{{ $match['photoUrl'] }}" alt="{{ $match['user']->name }}" class="h-20 w-20 rounded-full object-cover">
                                                 @else
@@ -142,13 +187,21 @@
                                                     </div>
                                                 @endif
 
-                                                <div>
-                                                    <h2 class="text-4xl font-black leading-none text-gray-900">
-                                                        {{ $match['user']->name }}{{ $match['age'] ? ', ' . $match['age'] . ' años' : '' }}
+                                                <div class="min-w-0">
+                                                    <h2 class="text-4xl font-black leading-tight text-gray-900 break-words">
+                                                        {{ $match['user']->name }}
                                                     </h2>
-                                                    <p class="mt-2 text-xl font-semibold text-gray-900">
-                                                        {{ $match['career'] ?: 'Carrera no especificada' }}
-                                                    </p>
+                                                    <div class="mt-2 space-y-1">
+                                                        @if ($match['age'])
+                                                            <div class="inline-flex items-center px-3 py-1 text-sm font-semibold text-gray-800 ">
+                                                                Tiene {{ $match['age'] }} años
+                                                            </div>
+                                                        @endif
+
+                                                        <div class="inline-flex items-center px-3 py-1 text-sm font-semibold text-gray-800 ">
+                                                            Estudia {{ $match['career'] ?: 'Carrera no especificada' }}
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </div>
 
@@ -209,6 +262,13 @@
 
     @include('components.skills-modal')
     @include('components.availability-modal')
+
+    <div id="dashboard-profile-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/45 p-3 sm:p-6" role="dialog" aria-modal="true" aria-label="Perfil del usuario">
+        <div class="relative h-[92vh] w-full max-w-4xl overflow-hidden rounded-2xl bg-white shadow-2xl">
+            <button id="dashboard-profile-modal-close" type="button" class="absolute right-3 top-3 z-10 rounded-full bg-gray-100 px-3 py-1 text-sm font-bold text-gray-700 hover:bg-gray-200">Cerrar</button>
+            <iframe id="dashboard-profile-modal-frame" src="about:blank" class="h-full w-full border-0" title="Perfil"></iframe>
+        </div>
+    </div>
 
     <script>
         (() => {
@@ -323,6 +383,49 @@
                         window.alert(error.message);
                     }
                 }
+            });
+        })();
+    </script>
+
+    <script>
+        (() => {
+            const profileTemplate = '{{ route('profile.show', ['user' => '__USER__', 'embed' => 1]) }}';
+            const profileModal = document.getElementById('dashboard-profile-modal');
+            const profileFrame = document.getElementById('dashboard-profile-modal-frame');
+            const profileModalClose = document.getElementById('dashboard-profile-modal-close');
+
+            if (!profileModal || !profileFrame) {
+                return;
+            }
+
+            const openProfileModal = (userId) => {
+                profileFrame.src = profileTemplate.replace('__USER__', String(userId));
+                profileModal.classList.remove('hidden');
+                profileModal.classList.add('flex');
+            };
+
+            const closeProfileModal = () => {
+                profileModal.classList.add('hidden');
+                profileModal.classList.remove('flex');
+                profileFrame.src = 'about:blank';
+            };
+
+            profileModalClose?.addEventListener('click', closeProfileModal);
+
+            profileModal.addEventListener('click', (event) => {
+                if (event.target === profileModal) {
+                    closeProfileModal();
+                }
+            });
+
+            document.addEventListener('click', (event) => {
+                const trigger = event.target.closest('[data-profile-open]');
+                if (!trigger) {
+                    return;
+                }
+
+                event.preventDefault();
+                openProfileModal(trigger.dataset.profileOpen);
             });
         })();
     </script>

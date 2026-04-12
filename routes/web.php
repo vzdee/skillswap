@@ -4,6 +4,7 @@ use App\Http\Controllers\ChatController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\MatchRequestController;
+use App\Http\Controllers\UserReviewController;
 use App\Http\Controllers\UserSetupController;
 use Illuminate\Support\Facades\Route;
 
@@ -40,6 +41,7 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     Route::get('/profile/view', [ProfileController::class, 'view'])->name('profile.view');
+    Route::get('/profile/view/{user}', [ProfileController::class, 'show'])->name('profile.show');
 
     Route::post('/onboarding/skills', [UserSetupController::class, 'storeSkills'])->name('onboarding.skills.store');
     Route::post('/onboarding/availability', [UserSetupController::class, 'storeAvailability'])->name('onboarding.availability.store');
@@ -51,6 +53,7 @@ Route::middleware('auth')->group(function () {
 
     Route::post('/matches/request', [MatchRequestController::class, 'store'])->name('matches.request.store');
     Route::post('/matches/request/{matchRequest}/respond', [MatchRequestController::class, 'respond'])->name('matches.request.respond');
+    Route::post('/reviews', [UserReviewController::class, 'store'])->name('reviews.store');
 });
 
 require __DIR__.'/auth.php';

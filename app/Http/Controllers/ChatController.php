@@ -28,6 +28,8 @@ class ChatController extends Controller
             ->with([
                 'userOne:id,name,profile_photo_path',
                 'userTwo:id,name,profile_photo_path',
+                'userOne.receivedReviews:id,reviewed_user_id,rating',
+                'userTwo.receivedReviews:id,reviewed_user_id,rating',
                 'latestMessage',
                 'latestMessage.user:id,name',
             ])
@@ -50,6 +52,9 @@ class ChatController extends Controller
                     'chat' => $chat,
                     'partner' => $partner,
                     'partnerPhotoUrl' => $this->photoUrl($partner?->profile_photo_path),
+                    'partnerAverageRating' => $partner && $partner->receivedReviews->isNotEmpty()
+                        ? round((float) $partner->receivedReviews->avg('rating'), 1)
+                        : null,
                     'preview' => $preview,
                     'lastAt' => $lastMessage?->created_at,
                 ];

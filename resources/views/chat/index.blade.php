@@ -15,16 +15,23 @@
                             >
                                 <div class="flex items-start gap-3">
                                     @if ($item['partnerPhotoUrl'])
-                                        <img src="{{ $item['partnerPhotoUrl'] }}" alt="{{ $item['partner']->name }}" class="mt-1 h-11 w-11 rounded-full object-cover">
+                                        <img src="{{ $item['partnerPhotoUrl'] }}" alt="{{ $item['partner']->name }}" class="mt-1 h-11 w-11 cursor-pointer rounded-full object-cover" data-profile-open="{{ $item['partner']->id }}">
                                     @else
-                                        <div class="mt-1 flex h-11 w-11 items-center justify-center rounded-full bg-blue-100 text-base font-bold text-blue-700">
+                                        <div class="mt-1 flex h-11 w-11 cursor-pointer items-center justify-center rounded-full bg-blue-100 text-base font-bold text-blue-700" data-profile-open="{{ $item['partner']->id }}">
                                             {{ strtoupper(substr($item['partner']->name, 0, 1)) }}
                                         </div>
                                     @endif
 
                                     <div class="min-w-0 flex-1">
                                         <div class="flex items-center justify-between gap-2">
-                                            <p class="truncate text-sm font-black text-gray-900">{{ $item['partner']->name }}</p>
+                                            <div class="min-w-0">
+                                                <p class="truncate text-sm font-black text-gray-900 cursor-pointer" data-profile-open="{{ $item['partner']->id }}">{{ $item['partner']->name }}</p>
+                                                <div class="mt-0.5 flex items-center gap-0.5 text-base leading-none">
+                                                    @for ($star = 1; $star <= 5; $star++)
+                                                        <span class="{{ $star <= (int) round($item['partnerAverageRating'] ?? 0) ? 'text-yellow-400' : 'text-gray-300' }}">★</span>
+                                                    @endfor
+                                                </div>
+                                            </div>
                                             <p class="text-xs text-gray-500">{{ $item['lastAt'] ? $item['lastAt']->format('g:i a') : '' }}</p>
                                         </div>
                                         <p class="mt-1 truncate text-xs text-gray-700">{{ $item['preview'] }}</p>
@@ -45,13 +52,13 @@
                             <div class="shrink-0 border-b border-gray-300/80 px-4 py-3">
                                 <div class="flex items-center gap-3">
                                     @if ($activePartnerPhotoUrl)
-                                        <img src="{{ $activePartnerPhotoUrl }}" alt="{{ $activePartner->name }}" class="h-11 w-11 rounded-full object-cover">
+                                        <img src="{{ $activePartnerPhotoUrl }}" alt="{{ $activePartner->name }}" class="h-11 w-11 cursor-pointer rounded-full object-cover" data-profile-open="{{ $activePartner->id }}">
                                     @else
-                                        <div class="flex h-11 w-11 items-center justify-center rounded-full bg-blue-100 text-base font-bold text-blue-700">
+                                        <div class="flex h-11 w-11 cursor-pointer items-center justify-center rounded-full bg-blue-100 text-base font-bold text-blue-700" data-profile-open="{{ $activePartner->id }}">
                                             {{ strtoupper(substr($activePartner->name, 0, 1)) }}
                                         </div>
                                     @endif
-                                    <p class="text-sm font-black text-gray-900">{{ $activePartner->name }}</p>
+                                    <p class="text-sm font-black text-gray-900 cursor-pointer" data-profile-open="{{ $activePartner->id }}">{{ $activePartner->name }}</p>
                                 </div>
                             </div>
 
@@ -69,9 +76,9 @@
                                             <div class="flex items-end gap-2 {{ $item['isMine'] ? 'flex-row-reverse' : '' }}">
                                                 @if (!$item['isMine'])
                                                     @if ($item['photoUrl'])
-                                                        <img src="{{ $item['photoUrl'] }}" alt="{{ $item['message']->user->name }}" class="h-9 w-9 rounded-full object-cover">
+                                                        <img src="{{ $item['photoUrl'] }}" alt="{{ $item['message']->user->name }}" class="h-9 w-9 cursor-pointer rounded-full object-cover" data-profile-open="{{ $item['message']->user->id }}">
                                                     @else
-                                                        <div class="flex h-9 w-9 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-700">
+                                                        <div class="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-700" data-profile-open="{{ $item['message']->user->id }}">
                                                             {{ strtoupper(substr($item['message']->user->name, 0, 1)) }}
                                                         </div>
                                                     @endif
@@ -79,7 +86,7 @@
 
                                                 <div class="rounded-3xl px-4 py-3 {{ $item['isMine'] ? 'bg-blue-500 text-white' : 'bg-white text-gray-900' }}">
                                                     <div class="mb-1 flex items-center gap-3">
-                                                        <p class="text-xs font-black {{ $item['isMine'] ? 'text-blue-100' : 'text-gray-900' }}">{{ $item['message']->user->name }}</p>
+                                                        <p class="text-xs font-black cursor-pointer {{ $item['isMine'] ? 'text-blue-100' : 'text-gray-900' }}" data-profile-open="{{ $item['message']->user->id }}">{{ $item['message']->user->name }}</p>
                                                         <p class="text-[11px] {{ $item['isMine'] ? 'text-blue-100' : 'text-gray-500' }}">{{ $item['message']->created_at->format('g:i a') }}</p>
                                                         @if ($item['isMine'])
                                                             <span data-message-checks class="text-xs font-black tracking-[-0.2em] {{ ($item['isRead'] ?? false) ? 'text-white' : 'text-black' }}">✓✓</span>
@@ -151,10 +158,18 @@
         <button id="chat-menu-copy" type="button" class="w-full px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-100">Copiar</button>
     </div>
 
+    <div id="chat-profile-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/45 p-3 sm:p-6" role="dialog" aria-modal="true" aria-label="Perfil del usuario">
+        <div class="relative h-[92vh] w-full max-w-4xl overflow-hidden rounded-2xl bg-white shadow-2xl">
+            <button id="chat-profile-modal-close" type="button" class="absolute right-3 top-3 z-10 rounded-full bg-gray-100 px-3 py-1 text-sm font-bold text-gray-700 hover:bg-gray-200">Cerrar</button>
+            <iframe id="chat-profile-modal-frame" src="about:blank" class="h-full w-full border-0" title="Perfil"></iframe>
+        </div>
+    </div>
+
     <script>
         (() => {
             const MAX_ATTACHMENT_BYTES = 2 * 1024 * 1024;
             const csrfToken = '{{ csrf_token() }}';
+            const profileTemplate = '{{ route('profile.show', ['user' => '__USER__', 'embed' => 1]) }}';
             const authUserId = {{ (int) auth()->id() }};
             const menu = document.getElementById('chat-message-menu');
             const copyButton = document.getElementById('chat-menu-copy');
@@ -167,6 +182,9 @@
             const attachmentTrigger = document.getElementById('chat-attachment-trigger');
             const attachmentName = document.getElementById('chat-attachment-name');
             const sendError = document.getElementById('chat-send-error');
+            const profileModal = document.getElementById('chat-profile-modal');
+            const profileFrame = document.getElementById('chat-profile-modal-frame');
+            const profileModalClose = document.getElementById('chat-profile-modal-close');
             const activeChatId = Number.parseInt(messagesList?.dataset.activeChatId || '0', 10);
             const hasEcho = Boolean(window.Echo && activeChatId > 0);
 
@@ -183,13 +201,13 @@
             let lastMessageId = Array.from(messagesList.querySelectorAll('[data-message-id]'))
                 .reduce((maxValue, node) => Math.max(maxValue, Number.parseInt(node.dataset.messageId || '0', 10) || 0), 0);
 
-            const formatPhoto = (url, name) => {
+            const formatPhoto = (url, name, userId) => {
                 if (url) {
-                    return `<img src="${url}" alt="${name}" class="h-9 w-9 rounded-full object-cover">`;
+                    return `<img src="${url}" alt="${name}" class="h-9 w-9 cursor-pointer rounded-full object-cover" data-profile-open="${userId}">`;
                 }
 
                 const initial = (name || '?').charAt(0).toUpperCase();
-                return `<div class="flex h-9 w-9 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-700">${initial}</div>`;
+                return `<div class="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-700" data-profile-open="${userId}">${initial}</div>`;
             };
 
             const escapeHtml = (value) => {
@@ -281,10 +299,10 @@
                         class="group relative max-w-[80%]"
                     >
                         <div class="flex items-end gap-2 ${item.is_mine ? 'flex-row-reverse' : ''}">
-                            ${item.is_mine ? '' : formatPhoto(item.user_photo_url, item.user_name)}
+                            ${item.is_mine ? '' : formatPhoto(item.user_photo_url, item.user_name, item.user_id)}
                             <div class="rounded-3xl px-4 py-3 ${item.is_mine ? 'bg-blue-500 text-white' : 'bg-white text-gray-900'}">
                                 <div class="mb-1 flex items-center gap-3">
-                                    <p class="text-xs font-black ${item.is_mine ? 'text-blue-100' : 'text-gray-900'}">${escapeHtml(item.user_name)}</p>
+                                    <p class="text-xs font-black cursor-pointer ${item.is_mine ? 'text-blue-100' : 'text-gray-900'}" data-profile-open="${item.user_id}">${escapeHtml(item.user_name)}</p>
                                     <p class="text-[11px] ${item.is_mine ? 'text-blue-100' : 'text-gray-500'}">${item.created_at_time}</p>
                                     ${checksHtml}
                                 </div>
@@ -344,6 +362,44 @@
             const hideMenu = () => {
                 menu.classList.add('hidden');
             };
+
+            const openProfileModal = (userId) => {
+                if (!profileModal || !profileFrame || !userId) {
+                    return;
+                }
+
+                profileFrame.src = profileTemplate.replace('__USER__', String(userId));
+                profileModal.classList.remove('hidden');
+                profileModal.classList.add('flex');
+            };
+
+            const closeProfileModal = () => {
+                if (!profileModal || !profileFrame) {
+                    return;
+                }
+
+                profileModal.classList.add('hidden');
+                profileModal.classList.remove('flex');
+                profileFrame.src = 'about:blank';
+            };
+
+            profileModalClose?.addEventListener('click', closeProfileModal);
+            profileModal?.addEventListener('click', (event) => {
+                if (event.target === profileModal) {
+                    closeProfileModal();
+                }
+            });
+
+            document.addEventListener('click', (event) => {
+                const trigger = event.target.closest('[data-profile-open]');
+                if (!trigger) {
+                    return;
+                }
+
+                event.preventDefault();
+                event.stopPropagation();
+                openProfileModal(trigger.dataset.profileOpen);
+            });
 
             const socketHeaders = () => {
                 const socketId = window.Echo?.socketId?.();

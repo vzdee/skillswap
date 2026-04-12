@@ -1,6 +1,8 @@
 <?php
 
 use App\Models\User;
+use App\Models\MatchRequest;
+use App\Models\UserReview;
 
 test('profile page is displayed', function () {
     $user = User::factory()->create();
@@ -10,6 +12,35 @@ test('profile page is displayed', function () {
         ->get('/profile');
 
     $response->assertOk();
+});
+
+test('profile view shows received reviews and rating summary', function () {
+    $reviewedUser = User::factory()->create();
+    $reviewer = User::factory()->create();
+
+    MatchRequest::query()->create([
+        'from_user_id' => $reviewer->id,
+        'to_user_id' => $reviewedUser->id,
+        'status' => 'accepted',
+        'responded_at' => now(),
+    ]);
+
+    UserReview::query()->create([
+        'reviewer_id' => $reviewer->id,
+        'reviewed_user_id' => $reviewedUser->id,
+        'rating' => 4,
+        'comment' => 'Excelente compañero de intercambio.',
+    ]);
+
+    $response = $this
+        ->actingAs($reviewedUser)
+        ->get('/profile/view');
+
+    $response
+        ->assertOk()
+        ->assertSee('4.0/5')
+        ->assertSee('Excelente compañero de intercambio.')
+        ->assertSee('1 reseña');
 });
 
 test('profile information can be updated', function () {

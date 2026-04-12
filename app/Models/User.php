@@ -96,6 +96,16 @@ class User extends Authenticatable
         return $this->hasMany(ChatMessage::class);
     }
 
+    public function givenReviews(): HasMany
+    {
+        return $this->hasMany(UserReview::class, 'reviewer_id');
+    }
+
+    public function receivedReviews(): HasMany
+    {
+        return $this->hasMany(UserReview::class, 'reviewed_user_id');
+    }
+
     public function getProfilePhotoUrlAttribute(): ?string
     {
         return self::buildProfilePhotoUrl($this->profile_photo_path);
