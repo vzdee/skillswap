@@ -19,7 +19,7 @@ class UserReviewController extends Controller
         $validated = $request->validate([
             'reviewed_user_id' => ['required', 'integer', 'exists:users,id'],
             'rating' => ['required', 'integer', 'min:1', 'max:5'],
-            'comment' => ['nullable', 'string', 'max:100'],
+            'comment' => ['nullable', 'string', 'max:250'],
         ]);
 
         $reviewer = $request->user();

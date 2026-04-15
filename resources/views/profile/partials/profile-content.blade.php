@@ -8,7 +8,7 @@
     $isOwnProfile = (bool) data_get($reviewEligibility, 'isOwnProfile', true);
     $hasAcceptedMatch = (bool) data_get($reviewEligibility, 'hasAcceptedMatch', false);
     $messagesExchangedCount = (int) data_get($reviewEligibility, 'messagesExchangedCount', 0);
-    $minimumMessagesRequired = (int) data_get($reviewEligibility, 'minimumMessagesRequired', 10);
+    $minimumMessagesRequired = (int) data_get($reviewEligibility, 'minimumMessagesRequired', 15);
     $canLeaveReview = (bool) data_get($reviewEligibility, 'canLeaveReview', false);
     $existingReview = data_get($reviewEligibility, 'existingReview');
     $existingRating = (int) old('rating', data_get($existingReview, 'rating', 0));
@@ -216,11 +216,11 @@
                                     id="profile-review-comment"
                                     name="comment"
                                     rows="4"
-                                    maxlength="100"
+                                    maxlength="250"
                                     placeholder="Escribe tu experiencia con esta persona..."
                                     class="mt-2 w-full rounded-xl border border-gray-300 px-3 py-2 text-sm text-gray-800 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
                                 >{{ $existingComment }}</textarea>
-                                <p id="profile-review-comment-counter" class="mt-1 text-xs text-gray-500">100 caracteres restantes</p>
+                                <p id="profile-review-comment-counter" class="mt-1 text-xs text-gray-500">250 caracteres restantes</p>
                                 @error('comment')
                                     <p class="mt-2 text-sm font-semibold text-red-600">{{ $message }}</p>
                                 @enderror
@@ -283,7 +283,7 @@
                     return;
                 }
 
-                const maxLength = Number.parseInt(commentInput.getAttribute('maxlength') || '100', 10);
+                const maxLength = Number.parseInt(commentInput.getAttribute('maxlength') || '250', 10);
                 const used = commentInput.value.length;
                 const remaining = Math.max(0, maxLength - used);
                 commentCounter.textContent = `${remaining} caracteres restantes`;

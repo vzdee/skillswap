@@ -17,7 +17,7 @@ class Chat extends Model
 {
     use HasFactory;
 
-    public const REVIEW_MIN_MESSAGES = 10;
+    public const REVIEW_MIN_MESSAGES = 15;
 
     protected function casts(): array
     {

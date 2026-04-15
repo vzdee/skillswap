@@ -238,7 +238,7 @@
             let currentMessageId = 0;
             let failedCounter = 0;
             const failedPayloads = new Map();
-            const reviewThreshold = Number.parseInt(reviewSuggestionMessage?.dataset.threshold || '10', 10);
+            const reviewThreshold = Number.parseInt(reviewSuggestionMessage?.dataset.threshold || '15', 10);
             const authUserAlreadyReviewed = reviewSuggestionMessage?.dataset.alreadyReviewed === '1';
             const reviewSuggestionDismissUrl = reviewSuggestionMessage?.dataset.dismissUrl || '';
             let reviewSuggestionDismissed = reviewSuggestionMessage?.dataset.dismissed === '1';
