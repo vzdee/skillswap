@@ -361,6 +361,7 @@ class ChatController extends Controller
             'user_photo_url' => $this->photoUrl($message->user->profile_photo_path),
             'body' => $message->body,
             'created_at_time' => $message->created_at->format('g:i a'),
+            'created_at_iso' => $message->created_at->copy()->utc()->toIso8601String(),
             'is_mine' => (int) $message->user_id === $authUserId,
             'is_read' => $message->read_at !== null,
             'attachment_name' => $attachmentName,

@@ -35,11 +35,13 @@ class UserSetupController extends Controller
         }
 
         $teachIds = collect($validated['teach_skill_ids'])->map(fn ($id) => (int) $id)->unique()->values();
-        $learnIds = collect($validated['learn_skill_ids'])
-            ->map(fn ($id) => (int) $id)
-            ->unique()
-            ->reject(fn ($id) => $teachIds->contains($id))
-            ->values();
+        $learnIds = collect($validated['learn_skill_ids'])->map(fn ($id) => (int) $id)->unique()->values();
+
+        if ($teachIds->intersect($learnIds)->isNotEmpty()) {
+            return response()->json([
+                'message' => 'No puedes registrar la misma habilidad en ensenar y aprender al mismo tiempo.',
+            ], 422);
+        }
 
         $user = $request->user();
         $now = Carbon::now();
@@ -107,13 +109,22 @@ class UserSetupController extends Controller
 
         $user = $request->user();
         $isTeach = $validated['type'] === 'teach';
+        $skillId = (int) $validated['skill_id'];
 
-        DB::transaction(function () use ($user, $validated, $isTeach): void {
+        $primaryRelation = $isTeach ? $user->taughtSkills() : $user->learningSkills();
+
+        if ($primaryRelation->where('skills.id', $skillId)->exists()) {
+            return response()->json([
+                'message' => 'Esa habilidad ya esta agregada.',
+            ], 422);
+        }
+
+        DB::transaction(function () use ($user, $validated, $isTeach, $skillId): void {
             $primaryRelation = $isTeach ? $user->taughtSkills() : $user->learningSkills();
             $oppositeRelation = $isTeach ? $user->learningSkills() : $user->taughtSkills();
 
-            $oppositeRelation->detach($validated['skill_id']);
-            $primaryRelation->syncWithPivotValues([$validated['skill_id']], ['type' => $validated['type']], false);
+            $oppositeRelation->detach($skillId);
+            $primaryRelation->syncWithPivotValues([$skillId], ['type' => $validated['type']], false);
         });
 
         return response()->json(['message' => 'Habilidad agregada.']);

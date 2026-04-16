@@ -153,7 +153,7 @@
                             </div>
 
                             @if ($review->comment)
-                                <p class="mt-3 text-sm leading-6 text-gray-700">{{ $review->comment }}</p>
+                                <p class="mt-3 max-w-full break-all text-sm leading-6 text-gray-700">{{ $review->comment }}</p>
                             @else
                                 <p class="mt-3 text-sm italic text-gray-400">Sin comentario adicional.</p>
                             @endif

@@ -132,6 +132,7 @@
                 const options = document.getElementById(optionsId);
                 const list = document.getElementById(listId);
                 let selectedSkill = null;
+                let isSubmitting = false;
 
                 if (!input || !addButton || !options || !list) {
                     return;
@@ -172,6 +173,11 @@
                 };
 
                 const addSkillPill = (skill) => {
+                    const existingPill = list.querySelector(`[data-skill-pill="${type}"][data-skill-id="${skill.id}"]`);
+                    if (existingPill) {
+                        return;
+                    }
+
                     const pill = document.createElement('span');
                     pill.className = 'inline-flex items-center gap-2 rounded-full bg-gray-200 px-3 py-1 text-xs font-semibold uppercase text-gray-700';
                     pill.dataset.skillPill = type;
@@ -193,6 +199,10 @@
                 });
 
                 addButton.addEventListener('click', async () => {
+                    if (isSubmitting) {
+                        return;
+                    }
+
                     const term = input.value.trim();
                     if (!term) {
                         setFeedback('Escribe una habilidad para agregar.', true);
@@ -208,7 +218,15 @@
                         return;
                     }
 
+                    if (selectedSkillIds[type].has(resolved.id)) {
+                        setFeedback('Esa habilidad ya esta agregada.', true);
+                        return;
+                    }
+
                     try {
+                        isSubmitting = true;
+                        addButton.disabled = true;
+
                         await postJson('{{ route('profile.skills.add') }}', {
                             skill_id: resolved.id,
                             type,
@@ -230,6 +248,9 @@
                         setFeedback('Habilidad agregada correctamente.');
                     } catch (error) {
                         setFeedback(error.message, true);
+                    } finally {
+                        isSubmitting = false;
+                        addButton.disabled = false;
                     }
                 });
             };

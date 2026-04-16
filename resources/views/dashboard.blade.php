@@ -15,17 +15,17 @@
                 @endif
 
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                    <div class="flex items-center justify-evenly p-6 text-gray-900">
+                    <div class="flex flex-col items-stretch justify-evenly gap-3 p-4 text-gray-900 sm:flex-row sm:items-center sm:p-6">
                         <button
                             :class="tab === 'solicitudes' ? 'bg-sky-500 text-white' : 'bg-gray-200 text-gray-900'"
-                            class="p-3 rounded-full text-center font-semibold transition-colors duration-200 focus:outline-none"
+                            class="w-full rounded-full p-3 text-center text-sm font-semibold transition-colors duration-200 focus:outline-none sm:w-auto sm:text-base"
                             @click="tab = 'solicitudes'"
                         >
                             {{ __('Solicitudes Pendientes') }}
                         </button>
                         <button
                             :class="tab === 'matches' ? 'bg-sky-500 text-white' : 'bg-gray-200 text-gray-900'"
-                            class="p-3 rounded-full text-center font-semibold transition-colors duration-200 focus:outline-none"
+                            class="w-full rounded-full p-3 text-center text-sm font-semibold transition-colors duration-200 focus:outline-none sm:w-auto sm:text-base"
                             @click="tab = 'matches'"
                         >
                             {{ __('Matches') }}
@@ -34,7 +34,7 @@
                 </div>
                 <div class="p-6 mt-6 bg-white rounded-lg shadow min-h-[120px]">
                     <div x-show="tab === 'solicitudes'" x-cloak>
-                            <div class="mb-4 flex items-center justify-between">
+                            <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
                                 <h1 class="text-xl font-bold text-gray-900">Solicitudes Pendientes</h1>
                                 <span id="pending-requests-count" class="rounded-full bg-sky-100 px-3 py-1 text-xs font-semibold text-sky-700">
                                     {{ $pendingRequests->count() }} pendientes
@@ -46,9 +46,9 @@
                             @else
                                 <div class="grid gap-4 lg:grid-cols-2">
                                     @foreach ($pendingRequests as $pending)
-                                        <article class="relative rounded-[32px] bg-zinc-200/80 p-6" data-pending-card="{{ $pending['request']->id }}" data-from-user-id="{{ $pending['user']->id }}">
-                                            <div class="absolute right-6 top-6 flex flex-col items-end gap-1">
-                                                <div class="flex items-center gap-0.5 text-3xl leading-none">
+                                        <article class="relative rounded-[28px] bg-zinc-200/80 p-4 sm:rounded-[32px] sm:p-6" data-pending-card="{{ $pending['request']->id }}" data-from-user-id="{{ $pending['user']->id }}">
+                                            <div class="mb-3 flex flex-wrap items-center justify-between gap-2 sm:absolute sm:right-6 sm:top-6 sm:mb-0 sm:flex-col sm:items-end sm:gap-1">
+                                                <div class="flex items-center gap-0.5 text-2xl leading-none sm:text-3xl">
                                                     @for ($star = 1; $star <= 5; $star++)
                                                         <span class="{{ $star <= (int) ($pending['averageRating'] ?? 0) ? 'text-yellow-400' : 'text-gray-300' }}">★</span>
                                                     @endfor
@@ -56,34 +56,34 @@
                                                 <a
                                                     href="{{ route('profile.show', $pending['user']) }}"
                                                     data-profile-open="{{ $pending['user']->id }}"
-                                                    class="rounded-full px-3 py-1 text-xs font-semibold transition {{ $pending['reviewsCount'] > 0 ? 'bg-blue-100 text-blue-700 hover:bg-blue-200' : 'bg-gray-200 text-gray-500 hover:bg-gray-300' }}"
+                                                    class="max-w-full whitespace-normal rounded-full px-3 py-1 text-[11px] font-semibold leading-tight transition sm:text-xs {{ $pending['reviewsCount'] > 0 ? 'bg-blue-100 text-blue-700 hover:bg-blue-200' : 'bg-gray-200 text-gray-500 hover:bg-gray-300' }}"
                                                 >
                                                     {{ $pending['reviewsCount'] > 0 ? ($pending['reviewsCount'] === 1 ? '1 reseña' : $pending['reviewsCount'] . ' reseñas') : 'Sin reseñas por el momento' }}
                                                 </a>
                                             </div>
 
-                                            <div class="flex items-start gap-4 pr-28 sm:pr-36">
+                                            <div class="flex items-start gap-3 pr-0 sm:gap-4 sm:pr-36">
                                                 @if ($pending['photoUrl'])
-                                                    <img src="{{ $pending['photoUrl'] }}" alt="{{ $pending['user']->name }}" class="h-20 w-20 rounded-full object-cover">
+                                                    <img src="{{ $pending['photoUrl'] }}" alt="{{ $pending['user']->name }}" class="h-16 w-16 rounded-full object-cover sm:h-20 sm:w-20">
                                                 @else
-                                                    <div class="flex h-20 w-20 items-center justify-center rounded-full bg-white text-2xl font-bold text-gray-600">
+                                                    <div class="flex h-16 w-16 items-center justify-center rounded-full bg-white text-xl font-bold text-gray-600 sm:h-20 sm:w-20 sm:text-2xl">
                                                         {{ strtoupper(substr($pending['user']->name, 0, 1)) }}
                                                     </div>
                                                 @endif
 
                                                 <div class="min-w-0">
-                                                    <h2 class="text-4xl font-black leading-tight text-gray-900 break-words">
+                                                    <h2 class="text-2xl font-black leading-tight text-gray-900 break-words sm:text-4xl">
                                                         {{ $pending['user']->name }}
                                                     </h2>
 
                                                     <div class="mt-2 space-y-1">
                                                         @if ($pending['age'])
-                                                            <div class="inline-flex items-center rounded-full bg-white/80 px-3 py-1 text-sm font-semibold text-gray-800 shadow-sm">
+                                                            <div class="inline-flex items-center rounded-full bg-white/80 px-3 py-1 text-xs font-semibold text-gray-800 shadow-sm sm:text-sm">
                                                                 Tiene {{ $pending['age'] }} años
                                                             </div>
                                                         @endif
 
-                                                        <div class="inline-flex items-center rounded-full bg-white/80 px-3 py-1 text-sm font-semibold text-gray-800 shadow-sm">
+                                                        <div class="inline-flex items-center rounded-full bg-white/80 px-3 py-1 text-xs font-semibold text-gray-800 shadow-sm sm:text-sm">
                                                             Estudia {{ $pending['career'] ?: 'Carrera no especificada' }}
                                                         </div>
                                                     </div>
@@ -92,7 +92,7 @@
 
                                             <div class="mt-5 space-y-4">
                                                 <div>
-                                                    <p class="text-3xl font-black text-gray-900">Habilidades</p>
+                                                    <p class="text-xl font-black text-gray-900 sm:text-3xl">Habilidades</p>
                                                     <div class="mt-2 flex flex-wrap gap-2">
                                                         @forelse ($pending['skillsTheyCanTeach'] as $skill)
                                                             <span class="rounded-lg bg-gray-300 px-3 py-1 text-sm font-medium text-gray-800">{{ $skill }}</span>
@@ -103,7 +103,7 @@
                                                 </div>
 
                                                 <div>
-                                                    <p class="text-3xl font-black text-gray-900">Intereses</p>
+                                                    <p class="text-xl font-black text-gray-900 sm:text-3xl">Intereses</p>
                                                     <div class="mt-2 flex flex-wrap gap-2">
                                                         @forelse ($pending['theirInterests'] as $interest)
                                                             <span class="rounded-lg bg-gray-300 px-3 py-1 text-sm font-medium text-gray-800">{{ $interest }}</span>
@@ -114,7 +114,7 @@
                                                 </div>
 
                                                 <div>
-                                                    <p class="text-3xl font-black text-gray-900">Horarios en Común</p>
+                                                    <p class="text-xl font-black text-gray-900 sm:text-3xl">Horarios en Común</p>
                                                     <div class="mt-2 flex flex-wrap gap-2">
                                                         @forelse ($pending['sharedAvailability'] as $sharedSlot)
                                                             <span class="rounded-lg bg-gray-300 px-3 py-1 text-sm font-medium text-gray-800">{{ $sharedSlot }}</span>
@@ -125,17 +125,17 @@
                                                 </div>
                                             </div>
 
-                                            <div class="mt-6 flex justify-end gap-4">
+                                            <div class="mt-6 flex justify-end gap-3 sm:gap-4">
                                                 <form method="POST" action="{{ route('matches.request.respond', $pending['request']) }}" class="js-request-respond-form" data-request-id="{{ $pending['request']->id }}" data-from-user-id="{{ $pending['user']->id }}">
                                                     @csrf
                                                     <input type="hidden" name="action" value="accept">
-                                                    <button type="submit" class="flex h-16 w-16 items-center justify-center rounded-full bg-blue-500 text-3xl font-black text-white transition hover:bg-blue-600">✓</button>
+                                                    <button type="submit" class="flex h-12 w-12 items-center justify-center rounded-full bg-blue-500 text-2xl font-black text-white transition hover:bg-blue-600 sm:h-16 sm:w-16 sm:text-3xl">✓</button>
                                                 </form>
 
                                                 <form method="POST" action="{{ route('matches.request.respond', $pending['request']) }}" class="js-request-respond-form" data-request-id="{{ $pending['request']->id }}" data-from-user-id="{{ $pending['user']->id }}">
                                                     @csrf
                                                     <input type="hidden" name="action" value="reject">
-                                                    <button type="submit" class="flex h-16 w-16 items-center justify-center rounded-full bg-gray-400 text-3xl font-black text-white transition hover:bg-gray-500">✕</button>
+                                                    <button type="submit" class="flex h-12 w-12 items-center justify-center rounded-full bg-gray-400 text-2xl font-black text-white transition hover:bg-gray-500 sm:h-16 sm:w-16 sm:text-3xl">✕</button>
                                                 </form>
                                             </div>
                                         </article>
@@ -156,9 +156,9 @@
                             @else
                                 <div class="mt-4 grid gap-4 lg:grid-cols-2">
                                     @foreach ($matches as $match)
-                                        <article class="relative rounded-[32px] bg-zinc-200/80 p-6" data-match-card="{{ $match['user']->id }}">
-                                            <div class="absolute right-6 top-6 flex flex-col items-end gap-1">
-                                                <div class="flex items-center gap-0.5 text-3xl leading-none">
+                                        <article class="relative rounded-[28px] bg-zinc-200/80 p-4 sm:rounded-[32px] sm:p-6" data-match-card="{{ $match['user']->id }}">
+                                            <div class="mb-3 flex flex-wrap items-center justify-between gap-2 sm:absolute sm:right-6 sm:top-6 sm:mb-0 sm:flex-col sm:items-end sm:gap-1">
+                                                <div class="flex items-center gap-0.5 text-2xl leading-none sm:text-3xl">
                                                     @for ($star = 1; $star <= 5; $star++)
                                                         <span class="{{ $star <= (int) ($match['averageRating'] ?? 0) ? 'text-yellow-400' : 'text-gray-300' }}">★</span>
                                                     @endfor
@@ -166,33 +166,33 @@
                                                 <a
                                                     href="{{ route('profile.show', $match['user']) }}"
                                                     data-profile-open="{{ $match['user']->id }}"
-                                                    class="rounded-full px-3 py-1 text-xs font-semibold transition {{ $match['reviewsCount'] > 0 ? 'bg-blue-100 text-blue-700 hover:bg-blue-200' : 'bg-gray-200 text-gray-500 hover:bg-gray-300' }}"
+                                                    class="max-w-full whitespace-normal rounded-full px-3 py-1 text-[11px] font-semibold leading-tight transition sm:text-xs {{ $match['reviewsCount'] > 0 ? 'bg-blue-100 text-blue-700 hover:bg-blue-200' : 'bg-gray-200 text-gray-500 hover:bg-gray-300' }}"
                                                 >
                                                     {{ $match['reviewsCount'] > 0 ? ($match['reviewsCount'] === 1 ? '1 reseña' : $match['reviewsCount'] . ' reseñas') : 'Sin reseñas por el momento' }}
                                                 </a>
                                             </div>
 
-                                            <div class="flex items-start gap-4 pr-28 sm:pr-36">
+                                            <div class="flex items-start gap-3 pr-0 sm:gap-4 sm:pr-36">
                                                 @if ($match['photoUrl'])
-                                                    <img src="{{ $match['photoUrl'] }}" alt="{{ $match['user']->name }}" class="h-20 w-20 rounded-full object-cover">
+                                                    <img src="{{ $match['photoUrl'] }}" alt="{{ $match['user']->name }}" class="h-16 w-16 rounded-full object-cover sm:h-20 sm:w-20">
                                                 @else
-                                                    <div class="flex h-20 w-20 items-center justify-center rounded-full bg-white text-2xl font-bold text-gray-600">
+                                                    <div class="flex h-16 w-16 items-center justify-center rounded-full bg-white text-xl font-bold text-gray-600 sm:h-20 sm:w-20 sm:text-2xl">
                                                         {{ strtoupper(substr($match['user']->name, 0, 1)) }}
                                                     </div>
                                                 @endif
 
                                                 <div class="min-w-0">
-                                                    <h2 class="text-4xl font-black leading-tight text-gray-900 break-words">
+                                                    <h2 class="text-2xl font-black leading-tight text-gray-900 break-words sm:text-4xl">
                                                         {{ $match['user']->name }}
                                                     </h2>
                                                     <div class="mt-2 space-y-1">
                                                         @if ($match['age'])
-                                                            <div class="inline-flex items-center px-3 py-1 text-sm font-semibold text-gray-800 ">
+                                                            <div class="inline-flex items-center px-3 py-1 text-xs font-semibold text-gray-800 sm:text-sm ">
                                                                 Tiene {{ $match['age'] }} años
                                                             </div>
                                                         @endif
 
-                                                        <div class="inline-flex items-center px-3 py-1 text-sm font-semibold text-gray-800 ">
+                                                        <div class="inline-flex items-center px-3 py-1 text-xs font-semibold text-gray-800 sm:text-sm ">
                                                             Estudia {{ $match['career'] ?: 'Carrera no especificada' }}
                                                         </div>
                                                     </div>
@@ -201,7 +201,7 @@
 
                                             <div class="mt-5 space-y-4">
                                                 <div>
-                                                    <p class="text-3xl font-black text-gray-900">Habilidades</p>
+                                                    <p class="text-xl font-black text-gray-900 sm:text-3xl">Habilidades</p>
                                                     <div class="mt-2 flex flex-wrap gap-2">
                                                         @foreach ($match['skillsYouCanTeach'] as $skill)
                                                             <span class="rounded-lg bg-gray-300 px-3 py-1 text-sm font-medium text-gray-800">{{ $skill }}</span>
@@ -210,7 +210,7 @@
                                                 </div>
 
                                                 <div>
-                                                    <p class="text-3xl font-black text-gray-900">Intereses</p>
+                                                    <p class="text-xl font-black text-gray-900 sm:text-3xl">Intereses</p>
                                                     <div class="mt-2 flex flex-wrap gap-2">
                                                         @foreach ($match['skillsTheyCanTeach'] as $skill)
                                                             <span class="rounded-lg bg-gray-300 px-3 py-1 text-sm font-medium text-gray-800">{{ $skill }}</span>
@@ -219,7 +219,7 @@
                                                 </div>
 
                                                 <div>
-                                                    <p class="text-3xl font-black text-gray-900">Horarios en Común</p>
+                                                    <p class="text-xl font-black text-gray-900 sm:text-3xl">Horarios en Común</p>
                                                     <div class="mt-2 flex flex-wrap gap-2">
                                                         @foreach ($match['sharedAvailability'] as $sharedSlot)
                                                             <span class="rounded-lg bg-gray-300 px-3 py-1 text-sm font-medium text-gray-800">{{ $sharedSlot }}</span>
@@ -442,13 +442,32 @@
             const availabilityModal = document.getElementById('availability-onboarding-modal');
 
             const openModal = (modal) => {
+                if (!modal) {
+                    return;
+                }
+
                 modal.classList.remove('hidden');
                 modal.classList.add('flex');
+
+                document.documentElement.classList.add('overflow-hidden');
+                document.body.classList.add('overflow-hidden');
             };
 
             const closeModal = (modal) => {
+                if (!modal) {
+                    return;
+                }
+
                 modal.classList.add('hidden');
                 modal.classList.remove('flex');
+
+                const anyOnboardingModalOpen = [skillsModal, availabilityModal]
+                    .some((item) => item && item.classList.contains('flex'));
+
+                if (!anyOnboardingModalOpen) {
+                    document.documentElement.classList.remove('overflow-hidden');
+                    document.body.classList.remove('overflow-hidden');
+                }
             };
 
             const postJson = async (url, payload) => {
@@ -514,12 +533,20 @@
                 const renderOptions = () => {
                     const term = input.value.trim().toLowerCase();
                     const blockedSet = blockedSetResolver();
+
+                    if (skillCatalog.length === 0) {
+                        options.innerHTML = '<p class="px-3 py-2 text-sm text-gray-500">No hay habilidades disponibles en el catalogo.</p>';
+                        options.classList.remove('hidden');
+                        return;
+                    }
+
                     const matches = skillCatalog
                         .filter((skill) => !selectedSet.has(skill.id) && !blockedSet.has(skill.id) && skill.name.toLowerCase().includes(term))
                         .slice(0, 8);
 
                     if (matches.length === 0) {
-                        hideOptions();
+                        options.innerHTML = '<p class="px-3 py-2 text-sm text-gray-500">No hay coincidencias.</p>';
+                        options.classList.remove('hidden');
                         return;
                     }
 
@@ -532,7 +559,6 @@
                         option.addEventListener('click', () => {
                             selectedSet.add(skill.id);
                             input.value = '';
-                            hideOptions();
                             renderPills();
                             if (type === 'teach' && learnSelector?.selectedSet.has(skill.id)) {
                                 learnSelector.selectedSet.delete(skill.id);
@@ -542,6 +568,8 @@
                                 teachSelector.selectedSet.delete(skill.id);
                                 teachSelector.renderPills();
                             }
+
+                            renderOptions();
                         });
                         options.appendChild(option);
                     });
@@ -551,8 +579,11 @@
                 input.addEventListener('input', renderOptions);
                 input.addEventListener('focus', renderOptions);
                 input.addEventListener('click', renderOptions);
-                input.addEventListener('blur', () => {
-                    window.setTimeout(hideOptions, 120);
+
+                document.addEventListener('click', (event) => {
+                    if (!input.contains(event.target) && !options.contains(event.target)) {
+                        hideOptions();
+                    }
                 });
 
                 renderPills();
@@ -574,10 +605,10 @@
 
                 Object.entries(availabilityDays).forEach(([dayKey, dayLabel]) => {
                     const dayColumn = document.createElement('div');
-                    dayColumn.className = 'space-y-2';
+                    dayColumn.className = 'space-y-2 rounded-xl border border-gray-100 p-2 sm:rounded-none sm:border-0 sm:p-0';
 
                     const dayTitle = document.createElement('p');
-                    dayTitle.className = 'text-xl font-bold text-gray-900';
+                    dayTitle.className = 'text-base font-bold text-gray-900 sm:text-lg';
                     dayTitle.textContent = dayLabel;
                     dayColumn.appendChild(dayTitle);
 
@@ -585,7 +616,7 @@
                         const key = `${dayKey}|${block}`;
                         const button = document.createElement('button');
                         button.type = 'button';
-                        button.className = 'block w-full rounded-md bg-gray-200 px-3 py-1 text-xs font-semibold text-gray-600 transition hover:bg-gray-300';
+                        button.className = 'block w-full rounded-md bg-gray-200 px-2 py-2 text-[11px] font-semibold text-gray-600 transition hover:bg-gray-300 sm:px-3 sm:py-1 sm:text-xs';
                         button.textContent = block;
                         button.dataset.blockKey = key;
 
@@ -694,6 +725,8 @@
 
             if (requiresSkills) {
                 openModal(skillsModal);
+                teachSelector?.renderOptions();
+                learnSelector?.renderOptions();
             } else if (requiresAvailability) {
                 openModal(availabilityModal);
             }

@@ -32,7 +32,12 @@
                                                     @endfor
                                                 </div>
                                             </div>
-                                            <p class="text-xs text-gray-500">{{ $item['lastAt'] ? $item['lastAt']->format('g:i a') : '' }}</p>
+                                            <p
+                                                class="text-xs text-gray-500"
+                                                data-time-iso="{{ $item['lastAt'] ? $item['lastAt']->copy()->utc()->toIso8601String() : '' }}"
+                                            >
+                                                {{ $item['lastAt'] ? $item['lastAt']->format('g:i a') : '' }}
+                                            </p>
                                         </div>
                                         <p class="mt-1 truncate text-xs text-gray-700">{{ $item['preview'] }}</p>
                                     </div>
@@ -87,7 +92,12 @@
                                                 <div class="rounded-3xl px-4 py-3 {{ $item['isMine'] ? 'bg-blue-500 text-white' : 'bg-white text-gray-900' }}">
                                                     <div class="mb-1 flex items-center gap-3">
                                                         <p class="text-xs font-black cursor-pointer {{ $item['isMine'] ? 'text-blue-100' : 'text-gray-900' }}" data-profile-open="{{ $item['message']->user->id }}">{{ $item['message']->user->name }}</p>
-                                                        <p class="text-[11px] {{ $item['isMine'] ? 'text-blue-100' : 'text-gray-500' }}">{{ $item['message']->created_at->format('g:i a') }}</p>
+                                                        <p
+                                                            class="text-[11px] {{ $item['isMine'] ? 'text-blue-100' : 'text-gray-500' }}"
+                                                            data-time-iso="{{ $item['message']->created_at->copy()->utc()->toIso8601String() }}"
+                                                        >
+                                                            {{ $item['message']->created_at->format('g:i a') }}
+                                                        </p>
                                                         @if ($item['isMine'])
                                                             <span data-message-checks class="text-xs font-black tracking-[-0.2em] {{ ($item['isRead'] ?? false) ? 'text-white' : 'text-black' }}">✓✓</span>
                                                         @endif
@@ -227,6 +237,10 @@
             const reviewSuggestionDismiss = document.getElementById('chat-review-suggestion-dismiss');
             const activeChatId = Number.parseInt(messagesList?.dataset.activeChatId || '0', 10);
             const hasEcho = Boolean(window.Echo && activeChatId > 0);
+            const localTimeFormatter = new Intl.DateTimeFormat(undefined, {
+                hour: 'numeric',
+                minute: '2-digit',
+            });
 
             if (!menu || !copyButton || !deleteButton || !messagesList || !sendForm) {
                 return;
@@ -246,6 +260,27 @@
             let messagesExchangedCount = Number.parseInt(reviewSuggestionMessage?.dataset.messagesCount || '0', 10);
             let lastMessageId = Array.from(messagesList.querySelectorAll('[data-message-id]'))
                 .reduce((maxValue, node) => Math.max(maxValue, Number.parseInt(node.dataset.messageId || '0', 10) || 0), 0);
+
+            const formatTimeFromIso = (isoValue, fallback = '') => {
+                if (!isoValue) {
+                    return fallback;
+                }
+
+                const parsed = new Date(isoValue);
+                if (Number.isNaN(parsed.getTime())) {
+                    return fallback;
+                }
+
+                return localTimeFormatter.format(parsed);
+            };
+
+            const localizeTimeNodes = (rootNode = document) => {
+                rootNode.querySelectorAll('[data-time-iso]').forEach((node) => {
+                    const isoValue = node.dataset.timeIso || '';
+                    const localized = formatTimeFromIso(isoValue, node.textContent?.trim() || '');
+                    node.textContent = localized;
+                });
+            };
 
             const placeReviewSuggestionAsLast = () => {
                 if (!reviewSuggestionMessage || reviewSuggestionMessage.classList.contains('hidden')) {
@@ -425,6 +460,7 @@
                 const wrapper = document.createElement('div');
                 wrapper.className = item.is_mine ? 'flex justify-end' : 'flex justify-start';
                 wrapper.dataset.chatItem = String(item.id);
+                const localizedTime = formatTimeFromIso(item.created_at_iso, item.created_at_time || '');
 
                 const checksHtml = item.is_mine
                     ? `<span data-message-checks class="text-xs font-black tracking-[-0.2em] ${readChecksClass(Boolean(item.is_read))}">✓✓</span>`
@@ -444,7 +480,7 @@
                             <div class="rounded-3xl px-4 py-3 ${item.is_mine ? 'bg-blue-500 text-white' : 'bg-white text-gray-900'}">
                                 <div class="mb-1 flex items-center gap-3">
                                     <p class="text-xs font-black cursor-pointer ${item.is_mine ? 'text-blue-100' : 'text-gray-900'}" data-profile-open="${item.user_id}">${escapeHtml(item.user_name)}</p>
-                                    <p class="text-[11px] ${item.is_mine ? 'text-blue-100' : 'text-gray-500'}">${item.created_at_time}</p>
+                                    <p class="text-[11px] ${item.is_mine ? 'text-blue-100' : 'text-gray-500'}" data-time-iso="${escapeHtml(item.created_at_iso || '')}">${escapeHtml(localizedTime)}</p>
                                     ${checksHtml}
                                 </div>
                                 ${messageContentHtml(item)}
@@ -804,6 +840,7 @@
             });
 
             scrollToLatest();
+            localizeTimeNodes(document);
             refreshReviewSuggestion(messagesExchangedCount);
 
             reviewSuggestionDismiss?.addEventListener('click', async (event) => {

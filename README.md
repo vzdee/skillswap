@@ -77,14 +77,38 @@ composer run dev
 
 ## Herd Share / Public Link
 
-When sharing the app URL, set these values in .env with your shared URL:
+Before opening a public tunnel, make sure frontend assets are built:
+
+```bash
+npm run build
+```
+
+Set these values in .env with your shared URL:
 
 ```env
 APP_URL=https://your-share-url
-ASSET_URL=${APP_URL}
+ASSET_URL=
+SESSION_SECURE_COOKIE=true
+VITE_REVERB_WSS_PORT=443
 ```
 
-ASSET_URL ensures CSS, JS, images, and storage asset URLs are generated with the shared domain.
+Notes:
+
+- `ASSET_URL` is left empty so Laravel uses the current request host (works for local and shared URLs).
+- `SESSION_SECURE_COOKIE=true` ensures auth/session cookies are always marked secure on HTTPS tunnels.
+- `VITE_REVERB_WSS_PORT=443` keeps browser WebSocket connections on the public HTTPS port while backend Reverb can still run locally on `REVERB_PORT=8080`.
+
+Optional (real-time chat from public URL):
+
+```bash
+herd share 127.0.0.1:8080
+```
+
+Then set in `.env`:
+
+```env
+VITE_REVERB_HOST=your-second-share-url-without-https
+```
 
 ## Contributing
 
